@@ -12,6 +12,7 @@ import (
 	psCPU "github.com/shirou/gopsutil/cpu"
 
 	tui "github.com/gizak/termui/v3"
+	"github.com/shirou/gopsutil/process"
 	ui "github.com/xxxserxxx/gotop/termui"
 	"github.com/xxxserxxx/gotop/utils"
 )
@@ -328,4 +329,35 @@ func (self SortProcsByMem) Swap(i, j int) {
 // Less implements Sort interface
 func (self SortProcsByMem) Less(i, j int) bool {
 	return self[i].Mem < self[j].Mem
+}
+
+func getProcs() ([]Proc, error) {
+	procs, err := process.Processes()
+	if err != nil {
+		return nil, err
+	}
+	rv := make([]Proc, len(procs))
+	for i, p := range procs {
+		cmdLine, err := p.Cmdline()
+		if err != nil {
+			return nil, err
+		}
+		cmd, err := p.Name()
+		if err != nil {
+			return nil, err
+		}
+		cpu, err := p.CPUPercent()
+		if err != nil {
+			return nil, err
+		}
+		mem, err := p.MemoryPercent()
+		rv[i] = Proc{
+			Pid:         int(p.Pid),
+			CommandName: cmd,
+			FullCommand: cmdLine,
+			Cpu:         cpu,
+			Mem:         float64(mem),
+		}
+	}
+	return rv, nil
 }
