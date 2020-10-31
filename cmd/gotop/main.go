@@ -27,7 +27,6 @@ import (
 	"github.com/xxxserxxx/gotop/v4/devices"
 	"github.com/xxxserxxx/gotop/v4/layout"
 	"github.com/xxxserxxx/gotop/v4/logging"
-	"github.com/xxxserxxx/gotop/v4/widgets"
 	w "github.com/xxxserxxx/gotop/v4/widgets"
 )
 
@@ -123,7 +122,7 @@ func parseArgs() error {
 		case "devices":
 			listDevices()
 		case "keys":
-			fmt.Println(widgets.KEYBINDS)
+			fmt.Println(w.KEYBINDS)
 		case "widgets":
 			fmt.Println(_widgets)
 		default:
