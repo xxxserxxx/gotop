@@ -8,7 +8,7 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/distatus/battery v0.9.0 h1:8NS5o00/j3Oh2xgocA6pQROTp5guoR+s8CZlWzHC4QM=
 github.com/distatus/battery v0.9.0/go.mod h1:gGO7GxHTi1zlRT+cAj8uGG0/8HFiqAeH0TJvoipnuPs=
-github.com/gizak/termui/v3 v3.0.0 h1:NYTUG6ig/sJK05O5FyhWemwlVPO8ilNpvS/PgRtrKAE=
+github.com/gizak/termui/v3 v3.0.0 h1:wzJWsGzUGARHB7QQJ/kI+iCrD4KIVugqf9nIfGcd2gM=
 github.com/gizak/termui/v3 v3.0.0/go.mod h1:uinu2dMdtMI+FTIdEFUJQT5y+KShnhQRshvPblXq3lY=
 github.com/gizak/termui/v3 v3.1.0 h1:ZZmVDgwHl7gR7elfKf1xc4IudXZ5qqfDh4wExk4Iajc=
 github.com/gizak/termui/v3 v3.1.0/go.mod h1:bXQEBkJpzxUAKf0+xq9MSWAvWZlE7c+aidmyFlkYTrY=
