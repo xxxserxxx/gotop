@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
@@ -29,6 +30,7 @@ type TempWidget struct {
 	TempHighColor  ui.Color
 	TempScale      TempScale
 	temps          map[string]float64
+	keys           ordered
 }
 
 func NewTempWidget(tempScale TempScale, filter []string) *TempWidget {
@@ -81,13 +83,17 @@ func (temp *TempWidget) EnableMetric() {
 func (temp *TempWidget) Draw(buf *ui.Buffer) {
 	temp.Block.Draw(buf)
 
-	var keys []string
-	for key := range temp.Data {
-		keys = append(keys, key)
+	if len(temp.keys) != len(temp.Data) {
+		temp.keys = make(ordered, len(temp.Data))
+		i := 0
+		for key := range temp.Data {
+			temp.keys[i] = key
+			i++
+		}
+		sort.Sort(temp.keys)
 	}
-	sort.Strings(keys)
 
-	for y, key := range keys {
+	for y, key := range temp.keys {
 		if y+1 > temp.Inner.Dy() {
 			break
 		}
@@ -124,4 +130,19 @@ func (temp *TempWidget) update() {
 			temp.Data[name] = val
 		}
 	}
+}
+
+type ordered []string
+
+func (o ordered) Len() int      { return len(o) }
+func (o ordered) Swap(i, j int) { o[j], o[i] = o[i], o[j] }
+func (o ordered) Less(i, j int) bool {
+	if strings.HasPrefix(o[i], "core") {
+		if !strings.HasPrefix(o[j], "core") {
+			return true
+		}
+	} else if strings.HasPrefix(o[j], "core") {
+		return false
+	}
+	return o[i] < o[j]
 }
