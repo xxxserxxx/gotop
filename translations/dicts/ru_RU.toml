@@ -46,7 +46,7 @@ help="""
   - b: переключение между Мбит / с и масштабированными байтами в секунду
 """
 # TRANSLATORS: Please don't translate the layout **names**
-layouts = """Built-in layouts:
+layouts = """Встроенные макеты:
    default
    minimal
    battery
@@ -54,7 +54,7 @@ layouts = """Built-in layouts:
 # TRANSLATORS: Please don't translate the colorcheme **names**
 colorschemes = """Встроенные цветовые схемы:
    default
-   default-dark (for white background)
+   default-dark (для белого фона)
    solarized
    solarized16-dark
    solarized16-light
