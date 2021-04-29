@@ -22,6 +22,8 @@ import (
 	"github.com/xxxserxxx/lingo"
 )
 
+// TODO: load colorschemes, layouts, languages from online repo
+
 // CONFFILE is the name of the default config file
 const CONFFILE = "gotop.conf"
 
@@ -47,6 +49,7 @@ type Config struct {
 	Tr                   lingo.Translations
 	Nvidia               bool
 	NvidiaRefresh        time.Duration
+	Headless             bool
 }
 
 func NewConfig() Config {
@@ -187,6 +190,12 @@ func load(in io.Reader, conf *Config) error {
 				return fmt.Errorf(conf.Tr.Value("config.err.line", ln, err.Error()))
 			}
 			conf.Nvidia = nv
+		case headless:
+			nv, err := strconv.ParseBool(kv[1])
+			if err != nil {
+				return fmt.Errorf(conf.Tr.Value("config.err.line", ln, err.Error()))
+			}
+			conf.Headless = nv
 		}
 	}
 
@@ -226,6 +235,7 @@ func (conf *Config) Write() (string, error) {
 
 func marshal(c *Config) []byte {
 	buff := bytes.NewBuffer(nil)
+	// TODO i18n for the config comments
 	fmt.Fprintln(buff, "# Scale graphs to this level; 7 is the default, 2 is zoomed out.")
 	fmt.Fprintf(buff, "%s=%d\n", graphhorizontalscale, c.GraphHorizontalScale)
 	fmt.Fprintln(buff, "# If true, start the UI with the help visible")
@@ -264,6 +274,8 @@ func marshal(c *Config) []byte {
 	fmt.Fprintf(buff, "%s=%t\n", nvidia, c.Nvidia)
 	fmt.Fprintln(buff, "# To configure the NVidia refresh rate, set a duration:")
 	fmt.Fprintln(buff, "#nvidiarefresh=30s")
+	fmt.Fprintln(buff, "# Set headless to true to disable TUI; most useful with `export`")
+	fmt.Fprintln(buff, "%s=%t\n", headless, c.Headless)
 	return buff.Bytes()
 }
 
@@ -283,4 +295,5 @@ const (
 	mbps                 = "mbps"
 	temperatures         = "temperatures"
 	nvidia               = "nvidia"
+	headless             = "headless"
 )

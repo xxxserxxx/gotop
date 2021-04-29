@@ -55,6 +55,7 @@ var (
 	tr           lingo.Translations
 )
 
+// TODO disable local devices
 func parseArgs() error {
 	cds := conf.ConfigDir.QueryFolders(configdir.All)
 	cpaths := make([]string, len(cds))
@@ -78,6 +79,8 @@ func parseArgs() error {
 	opflag.BoolVar(&conf.Test, "test", conf.Test, tr.Value("args.test"))
 	opflag.StringP("", "C", "", tr.Value("args.conffile"))
 	opflag.BoolVarP(&conf.Nvidia, "nvidia", "", conf.Nvidia, "Enable NVidia GPU support")
+	// TODO Add a disable-local-sensors
+	opflag.BoolVarP(&conf.Headless, "headless", "", conf.Headless, "Disable user interface")
 	list := opflag.String("list", "", tr.Value("args.list"))
 	wc := opflag.Bool("write-config", false, tr.Value("args.write"))
 	opflag.SortFlags = false
@@ -425,6 +428,27 @@ func run() int {
 		return runTests(conf)
 	}
 
+	// TODO https://godoc.org/github.com/VictoriaMetrics/metrics#Set
+	if conf.ExportPort != "" {
+		go func() {
+			http.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
+				metrics.WritePrometheus(w, true)
+			})
+			http.ListenAndServe(conf.ExportPort, nil)
+		}()
+	}
+
+	if conf.Headless {
+		if conf.ExportPort == "" {
+			fmt.Fprintln(os.Stdout, "metrics not being exported; did you forget --export?")
+		}
+		// No TUI; just wait for user to interrupt
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
+		return 0
+	}
+
 	if err = ui.Init(); err != nil {
 		stderrLogger.Print(err)
 		return 1
@@ -455,16 +479,6 @@ func run() int {
 	if conf.Statusbar {
 		bar.SetRect(0, termHeight-1, termWidth, termHeight)
 		ui.Render(bar)
-	}
-
-	// TODO https://godoc.org/github.com/VictoriaMetrics/metrics#Set
-	if conf.ExportPort != "" {
-		go func() {
-			http.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
-				metrics.WritePrometheus(w, true)
-			})
-			http.ListenAndServe(conf.ExportPort, nil)
-		}()
 	}
 
 	eventLoop(conf, grid)
