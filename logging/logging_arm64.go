@@ -1,4 +1,4 @@
-// +build !freebsd,arm64
+// +build !freebsd,arm64, !darwin
 
 package logging
 
