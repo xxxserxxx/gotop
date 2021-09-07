@@ -1,11 +1,9 @@
 package gotop
 
-//go:generate go-bindata -fs -pkg translations -prefix translations/dicts -o translations/dicts.go translations/dicts
-//go:generate go-bindata -pkg devices -prefix devices/data -o devices/smc.go devices/data
-
 import (
 	"bufio"
 	"bytes"
+	"embed"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,10 +17,14 @@ import (
 	"github.com/shibukawa/configdir"
 	"github.com/xxxserxxx/gotop/v4/colorschemes"
 	"github.com/xxxserxxx/gotop/v4/widgets"
-	"github.com/xxxserxxx/lingo"
+	"github.com/xxxserxxx/lingo/v2"
 )
 
 // TODO: load colorschemes, layouts, languages from online repo
+
+// FIXME github action uses old(er) Go version that doesn't have embed
+//go:embed "dicts/*.toml"
+var Dicts embed.FS
 
 // CONFFILE is the name of the default config file
 const CONFFILE = "gotop.conf"
@@ -52,6 +54,7 @@ type Config struct {
 	Headless             bool
 }
 
+// FIXME parsing can't handle blank lines
 func NewConfig() Config {
 	cd := configdir.New("", "gotop")
 	cd.LocalPath, _ = filepath.Abs(".")

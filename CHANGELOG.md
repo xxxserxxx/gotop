@@ -14,12 +14,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > - **Security**: in case of vulnerabilities.
 
 
-## [4.1.2]
+## [4.x.y]
 
 ### Added
 
-- 
+- Headless mode -- run gotop without UI, for more practical `-x`
 
+### Changed
+
+- Moved all metrics from widgets to devices, where they should have been in the
+  first place.
+
+
+## [4.1.2] 2021-07-20
+
+### Added
+
+- Several folks contributed to building on new Apple silicon (@clandmeter,
+  @areese, and @nickcorin). This took a distressingly long time for me to merge;
+  it required updating and testing a newer cross-compiling CGO, and I'm timid
+  when it comes to releasing stuff I can't test.
+- French and Russion translations (thank you @lourkeur and @talentlessguy!)
+- nvidia support merged in from extension
+- remote support merged in from extension
+- Spanish translation (thanks to @donPatino & @lourkeur)
+- There's a link to the github project in the help text now
+
+### Changed
+
+- Upgrade to Go 1.16. This eliminates go:generate for the language files, which
+  means gotop no longer builds with Go < 1.16. It does make things easier for
+  translators and merging.
+- The [remote monitoring documentation](https://github.com/xxxserxxx/gotop/blob/master/docs/remote-monitoring.md) is a little better.
+
+### Fixed
+
+- Extra spaces in help text (#167)
+- Crash with German translation (#166)
+- Bad error message for missing layouts (#164)
+- @JonathanReeve, @joinemm, and @plgruener contributed typo and mis-translation fixes
+- The remote extension was ignoring config-file settings (no ticket #)
 
 ## [4.1.1] 2021-02-03 
 

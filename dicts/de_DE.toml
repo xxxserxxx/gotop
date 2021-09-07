@@ -1,0 +1,184 @@
+configfile="Konfigurationsdatei"
+usage="Verwendung: {0} [optionen]\n\nOptionen:\n"
+total="Gesamt"
+
+
+[help]
+paths="Nach Farbschemata und Layouts sowie der Konfigurationsdatei wird in der folgenden Reihenfolge gesucht:"
+log="Die Protokolldatei befindet sich in {0}"
+written="Konfiguration geschrieben nach {0}"
+help="""
+Beenden: q oder <C-c>
+
+Prozessnavigation:
+  - k und <Up>: Zeile nach oben
+  - j und <Down>: Zeile nach unten
+  - <C-u>: halbe Seite nach oben
+  - <C-d>: halbe Seite nach unten
+  - <C-b>: ganze Seite nach oben
+  - <C-f>: ganze Seite nach unten
+  - gg und <Home>: an den Anfang springen
+  - G und <End>: an das Ende springen
+
+Process actions:
+  - <Tab>: Prozessgruppierung umschalten
+  - dd: Beende ausgewählten Prozess oder Gruppe von Prozessen mit SIGTERM (15)
+  - d3: Beende ausgewählten Prozess oder Gruppe von Prozessen mit SIGQUIT (3)
+  - d9: töte ausgewählten Prozess oder Gruppe von Prozessen mit SIGKILL (9)
+
+Prozesssortierung:
+  - c: CPU
+  - m: Mem
+  - p: PID
+
+Prozessfilterung:
+  - /: Filter bearbeiten
+  - (während der Bearbeitung):
+    - <Enter>: Filter akzeptieren
+    - <C-c> und <Escape>: Filter löschen
+
+CPU- und Mem-Graph-Skalierung:
+  - h: Skalierung vergrößern
+  - l: Skalierung verkleinern
+
+Netzwerk:
+  - b: Umschalten zwischen MBit/s und skalierten Bytes pro Sekunde
+"""
+# ÜBERSETZER: Bitte übersetzen Sie die Layout-**Namen** nicht
+layouts = """Eingebaute Layouts:
+   default
+   minimal
+   battery
+   kitchensink"""
+# ÜBERSETZER: Bitte übersetzen Sie die Farbschema-**Namen** nicht
+colorschemes = """Eingebaute Farbschemata:
+   default
+   default-dark (für weißen Hintergrund)
+   solarized
+   solarized16-dark
+   solarized16-light
+   monokai
+   vice
+   nord"""
+# ÜBERSETZER: Bitte übersetzen Sie die Widget-**Namen** nicht
+widgets = """Widgets, die in Layouts verwendet werden können:
+   cpu   - CPU-Auslastungsgraph
+   mem   - Physischer- & Swap-Speicher Auslastungsgraph
+   temp  - Sensortemperaturen
+   disk  - Belegung der physischen Festplattenpartitionen
+   power - Batterieladung
+   net   - Netzwerklast
+   procs - Interaktive Prozessliste"""
+
+
+[args]
+help="Diese Hilfe anzeigen."
+color="Farbschema einstellen."
+scale="Skalierungsfaktor der Graphen, >0"
+version="Versionsangabe und Beenden."
+percpu="Jede CPU im CPU-Widget anzeigen."
+cpuavg="Durchschnittliche CPU im CPU-Widget anzeigen."
+temp="Temperaturen in Fahrenheit anzeigen."
+statusbar="Statusleiste mit Uhrzeit anzeigen."
+rate="Frequenz aktualisieren. Die meisten Zeiteinheiten werden akzeptiert. \"1m\" = jede Minute aktualisieren. \"100 ms\" = alle 100 ms aktualisieren."
+layout="Name der Layoutspezifikationsdatei für die Benutzeroberfläche. \"-\" liest aus Standard-Eingabe."
+net="Netzwerkschnittstelle auswählen. Mehrere Schnittstellen können durch Kommata getrennt werden. Schnittstellen mit \"!\" werden ignoriert."
+export="Metriken für den Export auf dem angegebenen Port aktivieren."
+mbps="Netzwerkrate als MBit/s anzeigen."
+test="Tests ausführen und mit Erfolgs- oder Fehlercode beenden."
+conffile="Konfigurationsdatei, die anstelle der Standardeinstellung verwendet werden soll (muss ERSTES ARGUMENT sein)."
+nvidia="NVidia-GPU-Metriken aktivieren."
+nvidiarefresh="Frequenz aktualisieren. Die meisten Zeiteinheiten werden akzeptiert."
+list="""
+Auflisten von <devices|layouts|colorschemes|paths|keys|langs>
+      devices: Gerätenamen für filterbare Widgets
+      layouts: eingebaute Layouts
+      colorschemes: eingebaute Farbschemata
+      paths: Suchpfade für Konfigurationsdateien
+      widgets: verwendbare Widgets für Layouts
+      keys: Tastaturkürzel
+      langs: Übersetzungen"""
+write="Standard-Konfigurationsdatei schreiben."
+
+
+[config.err]
+configsyntax="0| Fehlerhafte Syntax der Konfigurationsdatei: sollte KEY=VALUE sein, war {0}"
+deprecation="1| Zeile {0}: '{1}' ist veraltet. Ignoriert {1}={2}"
+line="2| Zeile #{0}: {1}"
+tempscale="3| Ungültiger TempScale-Wert {0}"
+
+
+[error]
+configparse="4| Fehler beim Einlesen der Konfigurationsdatei: {0}"
+cliparse="5| Einlesen der CLI-Argumente: {0}"
+logsetup="6| Fehler beim Einrichten der Protokolldatei: {0}"
+unknownopt="7| Unbekannte Option \"{0}\". Mögliche Optionen: layouts, colorschemes, keys, paths, devices\n"
+writefail="8| Konfigurationsdatei konnte nicht geschrieben werden: {0}"
+checklog="9| Aufgetretene Fehler; von {0}:"
+metricsetup="10| Fehler beim Einrichten von {0}-Metriken: {1}"
+nometrics="11| Keine Metriken für {0} {1}"
+fatalfetch="12| Schwerwiegender Fehler beim Abrufen von {0}-Informationen: {1}"
+recovfetch="13| Behebbarer Fehler beim Abrufen von {0}-Informationen; überspringen {0}: {1}"
+nodevfound="14| Keine verwendbare {0} gefunden"
+setuperr="15| Fehler beim Einrichten {0}: {1}"
+colorschemefile="16| Farbschemadatei konnte nicht gefunden werden {0} in {1}"
+colorschemeread="17| Farbschemadatei konnte nicht gelesen werden {0}: {1}"
+colorschemeparse="18| Farbschemadatei konnte nicht analysiert werden: {0}"
+findlayout="19| Layoutdatei konnte nicht gefunden werden {0}: {1}"
+logopen="20| Protokolldatei konnte nicht geöffnet werden {0}: {1}"
+table="21| Tabellen-Widget TopRow-Wert kleiner als 0. TopRow: {0}"
+nohostname="22| Hostname konnte nicht abgerufen werden: {0}"
+
+[layout.error]
+widget="23| Ungültiger Widget-Name {0}. Muss einer von sein {1}"
+format="24| Layoutfehler in Zeile {0}: Format muss {1} sein. Fehler beim Parsen von {2} als int. Das Wort war {3}. Verwenden Sie eine Zeilenhöhe von 1."
+slashes="25 | Layoutwarnung in Zeile {0}: zu viele '/' in Wort {1}; zusätzlichen Müll ignorieren."
+
+[widget.label]
+disk=" Festplattennutzung "
+cpu=" CPU-Auslastung "
+gauge=" Leistungspegel "
+battery=" Batteriestatus "
+batt=" Batterie "
+temp=" Temperaturen "
+net=" Netzwerknutzung "
+netint=" Netzwerknutzung: {0} "
+mem=" Speichernutzung "
+
+
+[widget.net.err]
+netactivity="26 | Fehler beim Abrufen der Netzwerkaktivität von gopsutil: {0}"
+negvalrecv="27 | Fehler: negativer Wert für kürzlich empfangene Netzwerkdaten von gopsutil. RecentBytesRecv: {0}"
+negvalsent="28 | Fehler: negativer Wert für kürzlich gesendete Netzwerkdaten von gopsutil. RecentBytesSent: {0}"
+
+
+[widget.disk]
+disk="Festplatte"
+mount="Einhängepunkt"
+used="Benutzt"
+free="Frei"
+rs="R/s"
+ws="W/s"
+
+
+[widget.proc]
+filter=" Filter: "
+label=" Prozesse "
+[widget.proc.header]
+count="Anzahl"
+command="Befehl"
+cpu="CPU%"
+mem="Mem%"
+pid="PID"
+[widget.proc.err]
+count="29 | Fehler beim Abrufen der CPU-Anzahl von gopsutil: {0}"
+retrieve="30 | Fehler beim Abrufen der Prozesse: {0}"
+ps="31 | Fehler bei Ausführung von 'ps': {0}"
+gopsutil="32 | Fehler beim Abrufen der Prozesse von gopsutil: {0}"
+pidconv="33 | Konvertierung der PID in int: {0} fehlgeschlagen. Zeile 1}"
+cpuconv="34 | Konvertierung der CPU-Auslastung in float fehlgeschlagen: {0}. Zeile 1}"
+memconv="35 | Konvertierung der Speicher-Auslastung in float fehlgeschlagen: {0}. Zeile 1}"
+getcmd="36 | Fehler beim Abrufen des Prozessbefehls von gopsutil: {0}. psProc: {1}. i: {2}. pid: {3}"
+cpupercent="37 | Fehler beim Abrufen der Prozess-CPU-Auslastung von gopsutil: {0}. psProc: {1}. i: {2}. pid: {3}"
+mempercent="38 | Fehler beim Abrufen der Prozess-Speicher-Auslastung von gopsutil: {0}. psProc: {1}. i: {2}. pid: {3}"
+parse="39 | Ausgabe konnte nicht analysiert werden: {0}"

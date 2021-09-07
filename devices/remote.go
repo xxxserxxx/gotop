@@ -23,6 +23,8 @@ var remoteLock sync.Mutex
 // TODO network resiliency; I believe it currently crashes gotop when the network goes down
 // TODO Replace custom decoder with https://github.com/prometheus/common/blob/master/expfmt/decode.go
 // TODO MQTT / Stomp / MsgPack
+// FIXME high CPU use when remote goes offline
+// FIXME higher CPU use when using remote in general
 func init() {
 	opflag.StringVarP(&name, "remote-name", "", "", "Remote: name of remote gotop")
 	opflag.StringVarP(&remote_url, "remote-url", "", "", "Remote: URL of remote gotop")
@@ -37,10 +39,6 @@ type Remote struct {
 }
 
 func startup(vars map[string]string) error {
-	// Don't set anything up if there's nothing to do
-	if name == "" || remote_url == "" {
-		return nil
-	}
 	_cpuData = make(map[string]int)
 	_tempData = make(map[string]int)
 	_netData = make(map[string]float64)
@@ -49,6 +47,10 @@ func startup(vars map[string]string) error {
 
 	remoteLock = sync.Mutex{}
 	remotes := parseConfig(vars)
+	// Don't set anything up if there's nothing to do
+	if (name == "" || remote_url == "") && len(remotes) == 0 {
+		return nil
+	}
 	if remote_url != "" {
 		r := Remote{
 			url:     remote_url,
@@ -230,6 +232,7 @@ func updateUsage(cpus map[string]int, _ bool) map[string]error {
 
 func parseConfig(vars map[string]string) map[string]Remote {
 	rv := make(map[string]Remote)
+	log.Printf("VARS = %s", vars)
 	for key, value := range vars {
 		if strings.HasPrefix(key, "remote-") {
 			parts := strings.Split(key, "-")
