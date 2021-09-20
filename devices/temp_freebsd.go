@@ -1,8 +1,10 @@
+//go:build freebsd
 // +build freebsd
 
 package devices
 
 import (
+	"fmt"
 	"log"
 	"os/exec"
 	"strconv"
@@ -11,30 +13,22 @@ import (
 	"github.com/xxxserxxx/gotop/v4/utils"
 )
 
-func init() {
-	if len(devs()) == 0 {
-		log.Println(tr.Value("error.nodevfound", "thermal sensors"))
-		return
-	}
-	RegisterTemp(update)
-	RegisterDeviceList(Temperatures, devs, devs)
-}
-
 var sensorOIDS = map[string]string{
 	"dev.cpu.0.temperature":           "CPU 0 ",
 	"hw.acpi.thermal.tz0.temperature": "Thermal zone 0",
 }
 
-func update(temps map[string]int) map[string]error {
-	errors := make(map[string]error)
+func (t *Temperature) Update() error {
+	errors := make([]string, 0)
 
+	temps := make(map[string]float64)
 	for k, v := range sensorOIDS {
-		if _, ok := temps[k]; !ok {
+		if _, ok := t.temps[k]; !ok {
 			continue
 		}
 		output, err := exec.Command("sysctl", "-n", k).Output()
 		if err != nil {
-			errors[v] = err
+			errors = append(errors, err.Error())
 			continue
 		}
 
@@ -43,22 +37,27 @@ func update(temps map[string]int) map[string]error {
 		convertedOutput := utils.ConvertLocalizedString(s2)
 		value, err := strconv.ParseFloat(convertedOutput, 64)
 		if err != nil {
-			errors[v] = err
+			errors = append(errors, err.Error())
 			continue
 		}
 
-		temps[v] = int(value)
+		temps[v] = value
 	}
 
-	return errors
+	t.temps = temps
+	if len(errors) == 0 {
+		return nil
+	}
+	return fmt.Errorf(strings.Join(errors, "; "))
 }
 
-func devs() []string {
+func thermalSensorNames() []string {
 	rv := make([]string, 0, len(sensorOIDS))
 	// Check that thermal sensors are really available; they aren't in VMs
 	bs, err := exec.Command("sysctl", "-a").Output()
 	if err != nil {
-		log.Printf(tr.Value("error.fatalfetch", "temp", err.Error()))
+		log.Printf("%v", err)
+		//log.Printf(tr.Value("error.fatalfetch", "temp", err.Error()))
 		return []string{}
 	}
 	for k, _ := range sensorOIDS {
@@ -72,7 +71,17 @@ func devs() []string {
 		for k, _ := range sensorOIDS {
 			oids = append(oids, k)
 		}
-		log.Printf(tr.Value("error.nodevfound", strings.Join(oids, ", ")))
+		log.Printf("%v", err)
+		//log.Printf(tr.Value("error.nodevfound", strings.Join(oids, ", ")))
+	}
+	return rv
+}
+
+func thermalSensorLabels() []string {
+	rv := make([]string, 0, len(sensorOIDS))
+	ns := thermalSensorNames()
+	for _, n := range ns {
+		rv = append(rv, sensorOIDS[n])
 	}
 	return rv
 }

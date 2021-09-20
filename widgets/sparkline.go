@@ -1,10 +1,10 @@
-package termui
+package widgets
 
 import (
 	"image"
 	"log"
 
-	. "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3"
 )
 
 // Sparkline is like: ▅▆▂▂▅▇▂▂▃▆▆▆▅▃. The data points should be non-negative integers.
@@ -12,13 +12,13 @@ type Sparkline struct {
 	Data       []int
 	Title1     string
 	Title2     string
-	TitleColor Color
-	LineColor  Color
+	TitleColor termui.Color
+	LineColor  termui.Color
 }
 
 // SparklineGroup is a renderable widget which groups together the given sparklines.
 type SparklineGroup struct {
-	*Block
+	*termui.Block
 	Lines []*Sparkline
 }
 
@@ -35,12 +35,12 @@ func NewSparkline() *Sparkline {
 // NewSparklineGroup return a new *SparklineGroup with given Sparklines, you can always add a new Sparkline later.
 func NewSparklineGroup(ss ...*Sparkline) *SparklineGroup {
 	return &SparklineGroup{
-		Block: NewBlock(),
+		Block: termui.NewBlock(),
 		Lines: ss,
 	}
 }
 
-func (self *SparklineGroup) Draw(buf *Buffer) {
+func (self *SparklineGroup) Draw(buf *termui.Buffer) {
 	self.Block.Draw(buf)
 
 	lc := len(self.Lines) // lineCount
@@ -51,19 +51,19 @@ func (self *SparklineGroup) Draw(buf *Buffer) {
 		// prints titles
 		title1Y := self.Inner.Min.Y + 1 + (self.Inner.Dy()/lc)*i
 		title2Y := self.Inner.Min.Y + 2 + (self.Inner.Dy()/lc)*i
-		title1 := TrimString(line.Title1, self.Inner.Dx())
-		title2 := TrimString(line.Title2, self.Inner.Dx())
+		title1 := termui.TrimString(line.Title1, self.Inner.Dx())
+		title2 := termui.TrimString(line.Title2, self.Inner.Dx())
 		if self.Inner.Dy() > 5 {
 			buf.SetString(
 				title1,
-				NewStyle(line.TitleColor, ColorClear, ModifierBold),
+				termui.NewStyle(line.TitleColor, termui.ColorClear, termui.ModifierBold),
 				image.Pt(self.Inner.Min.X, title1Y),
 			)
 		}
 		if self.Inner.Dy() > 6 {
 			buf.SetString(
 				title2,
-				NewStyle(line.TitleColor, ColorClear, ModifierBold),
+				termui.NewStyle(line.TitleColor, termui.ColorClear, termui.ModifierBold),
 				image.Pt(self.Inner.Min.X, title2Y),
 			)
 		}
@@ -78,23 +78,23 @@ func (self *SparklineGroup) Draw(buf *Buffer) {
 		}
 		// prints sparkline
 		for x := self.Inner.Dx(); x >= 1; x-- {
-			char := BARS[1]
+			char := termui.BARS[1]
 			if (self.Inner.Dx() - x) < len(line.Data) {
 				offset := self.Inner.Dx() - x
 				curItem := line.Data[(len(line.Data)-1)-offset]
 				percent := float64(curItem) / float64(max)
-				index := int(percent*float64(len(BARS)-2)) + 1
-				if index < 1 || index >= len(BARS) {
+				index := int(percent*float64(len(termui.BARS)-2)) + 1
+				if index < 1 || index >= len(termui.BARS) {
 					log.Printf(
-						"invalid sparkline data value. index: %v, percent: %v, curItem: %v, offset: %v",
-						index, percent, curItem, offset,
+						"invalid sparkline data value. len(data) %d, offset %d, curItem %d, percent %f, index %d",
+						len(line.Data), offset, curItem, percent, index,
 					)
 				} else {
-					char = BARS[index]
+					char = termui.BARS[index]
 				}
 			}
 			buf.SetCell(
-				NewCell(char, NewStyle(line.LineColor)),
+				termui.NewCell(char, termui.NewStyle(line.LineColor)),
 				image.Pt(self.Inner.Min.X+x-1, self.Inner.Min.Y+sparkY-1),
 			)
 		}

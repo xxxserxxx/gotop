@@ -10,20 +10,20 @@ import (
 func TestParsing(t *testing.T) {
 	tests := []struct {
 		i string
-		f func(l layout)
+		f func(l Layout)
 	}{
-		{"cpu", func(l layout) {
+		{"cpu", func(l Layout) {
 			assert.Equal(t, 1, len(l.Rows))
 			assert.Equal(t, 1, len(l.Rows[0]))
 		}},
-		{"   cpu   \ndisk/1     mem/3\ntemp   \nnet    procs", func(l layout) {
+		{"   cpu   \ndisk/1     mem/3\ntemp   \nnet    procs", func(l Layout) {
 			assert.Equal(t, 4, len(l.Rows))
 			assert.Equal(t, 1, len(l.Rows[0]))
 			assert.Equal(t, 2, len(l.Rows[1]))
 			assert.Equal(t, 1, len(l.Rows[2]))
 			assert.Equal(t, 2, len(l.Rows[3]))
 		}},
-		{"cpu\ndisk/1 mem/3\ntemp\nnet procs", func(l layout) {
+		{"cpu\ndisk/1 mem/3\ntemp\nnet procs", func(l Layout) {
 			assert.Equal(t, 4, len(l.Rows))
 			// 1
 			assert.Equal(t, 1, len(l.Rows[0]))
@@ -46,7 +46,7 @@ func TestParsing(t *testing.T) {
 			assert.Equal(t, 0.5, l.Rows[3][1].Weight)
 			assert.Equal(t, 1, l.Rows[3][1].Height)
 		}},
-		{"2:cpu\ndisk\nmem", func(l layout) {
+		{"2:cpu\ndisk\nmem", func(l Layout) {
 			assert.Equal(t, 3, len(l.Rows))
 			assert.Equal(t, 1, len(l.Rows[0]))
 			assert.Equal(t, 2, l.Rows[0][0].Height)
@@ -55,7 +55,7 @@ func TestParsing(t *testing.T) {
 			assert.Equal(t, 1, len(l.Rows[2]))
 			assert.Equal(t, 1, l.Rows[2][0].Height)
 		}},
-		{"2:cpu disk\nmem", func(l layout) {
+		{"2:cpu disk\nmem", func(l Layout) {
 			assert.Equal(t, 2, len(l.Rows))
 			assert.Equal(t, 2, len(l.Rows[0]))
 			assert.Equal(t, 2, l.Rows[0][0].Height)
@@ -63,7 +63,7 @@ func TestParsing(t *testing.T) {
 			assert.Equal(t, 1, len(l.Rows[1]))
 			assert.Equal(t, 1, l.Rows[1][0].Height)
 		}},
-		{"cpu 2:disk\nmem", func(l layout) {
+		{"cpu 2:disk\nmem", func(l Layout) {
 			assert.Equal(t, 2, len(l.Rows))
 			assert.Equal(t, 2, len(l.Rows[0]))
 			assert.Equal(t, 1, l.Rows[0][0].Height)
@@ -71,7 +71,7 @@ func TestParsing(t *testing.T) {
 			assert.Equal(t, 1, len(l.Rows[1]))
 			assert.Equal(t, 1, l.Rows[1][0].Height)
 		}},
-		{"cpu disk\n2:mem", func(l layout) {
+		{"cpu disk\n2:mem", func(l Layout) {
 			assert.Equal(t, 2, len(l.Rows))
 			assert.Equal(t, 2, len(l.Rows[0]))
 			assert.Equal(t, 1, l.Rows[0][0].Height)
@@ -79,7 +79,7 @@ func TestParsing(t *testing.T) {
 			assert.Equal(t, 1, len(l.Rows[1]))
 			assert.Equal(t, 2, l.Rows[1][0].Height)
 		}},
-		{"cpu 2:disk/3\nmem", func(l layout) {
+		{"cpu 2:disk/3\nmem", func(l Layout) {
 			assert.Equal(t, 2, len(l.Rows))
 			assert.Equal(t, 2, len(l.Rows[0]))
 			assert.Equal(t, 1, l.Rows[0][0].Height)
@@ -90,7 +90,7 @@ func TestParsing(t *testing.T) {
 			assert.Equal(t, 1, l.Rows[1][0].Height)
 			assert.Equal(t, 1.0, l.Rows[1][0].Weight)
 		}},
-		{"2:cpu disk\nmem/3", func(l layout) {
+		{"2:cpu disk\nmem/3", func(l Layout) {
 			assert.Equal(t, 2, len(l.Rows))
 			assert.Equal(t, 2, len(l.Rows[0]))
 			assert.Equal(t, 2, l.Rows[0][0].Height)
@@ -101,7 +101,7 @@ func TestParsing(t *testing.T) {
 			assert.Equal(t, 1, l.Rows[1][0].Height)
 			assert.Equal(t, 1.0, l.Rows[1][0].Weight)
 		}},
-		{"cpu/2 mem/1 6:procs\n3:temp/1 2:disk/2\npower\nnet procs", func(l layout) {
+		{"cpu/2 mem/1 6:procs\n3:temp/1 2:disk/2\npower\nnet procs", func(l Layout) {
 			assert.Equal(t, 4, len(l.Rows))
 			// First row
 			assert.Equal(t, 3, len(l.Rows[0]))

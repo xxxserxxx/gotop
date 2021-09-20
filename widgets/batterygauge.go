@@ -2,77 +2,60 @@ package widgets
 
 import (
 	"fmt"
-	"log"
-
 	"time"
 
-	"github.com/VictoriaMetrics/metrics"
-	"github.com/distatus/battery"
-
-	"github.com/xxxserxxx/gotop/v4/termui"
+	"github.com/xxxserxxx/gotop/v4/devices"
 )
 
+// FIXME gauge isn't updating.
+
 type BatteryGauge struct {
-	*termui.Gauge
+	*Gauge
+	d []*devices.Batteries
 }
 
+// NewBatteryGauge creates a gauge widget representing the percentage of how
+// full power a battery is.
 func NewBatteryGauge() *BatteryGauge {
-	self := &BatteryGauge{Gauge: termui.NewGauge()}
+	self := &BatteryGauge{
+		Gauge: NewGauge(),
+		d:     make([]*devices.Batteries, 0),
+	}
 	self.Title = tr.Value("widget.label.gauge")
-
-	self.update()
-
-	go func() {
-		for range time.NewTicker(time.Second).C {
-			self.Lock()
-			self.update()
-			self.Unlock()
-		}
-	}()
 
 	return self
 }
 
-func (b *BatteryGauge) EnableMetric() {
-	metrics.NewGauge(makeName("battery", "total"), func() float64 {
-		return float64(b.Percent)
-	})
+func (g *BatteryGauge) Attach(b *devices.Batteries) {
+	g.d = append(g.d, b)
 }
 
 // Only report battery errors once.
 var errLogged = false
 
-func (b *BatteryGauge) update() {
-	bats, err := battery.GetAll()
-	if err != nil {
-		if !errLogged {
-			log.Printf("error setting up batteries: %v", err)
-			errLogged = true
-		}
-	}
-	if len(bats) < 1 {
-		b.Label = fmt.Sprintf("N/A")
-		return
-	}
+func (b *BatteryGauge) Update() {
 	mx := 0.0
 	cu := 0.0
-	charging := "%d%% ⚡%s"
-	rate := 0.0
-	for _, bat := range bats {
-		if bat.Full == 0.0 {
-			continue
-		}
-		mx += bat.Full
-		cu += bat.Current
-		if rate < bat.ChargeRate {
-			rate = bat.ChargeRate
-		}
-		if bat.State == battery.Charging {
-			charging = "%d%% 🔌%s"
+	// default: discharging
+	formatString := "%d%% ⚡%s"
+	var rate time.Duration
+	for _, bats := range b.d {
+		for _, bat := range bats.Data {
+			if bat.Full == 0.0 {
+				continue
+			}
+			mx += bat.Full
+			cu += bat.Current
+			if bat.Charging {
+				fullTime := (mx - cu) / bat.ChargeRate
+				rate, _ = time.ParseDuration(fmt.Sprintf("%fh", fullTime))
+				formatString = "%d%% 🔌%s"
+			} else {
+				runTime := cu / bat.ChargeRate
+				rate, _ = time.ParseDuration(fmt.Sprintf("%fh", runTime))
+			}
 		}
 	}
-	tn := (mx - cu) / rate
-	d, _ := time.ParseDuration(fmt.Sprintf("%fh", tn))
 	b.Percent = int((cu / mx) * 100.0)
-	b.Label = fmt.Sprintf(charging, b.Percent, d.Truncate(time.Minute))
+	b.Label = fmt.Sprintf(formatString, b.Percent, rate.Truncate(time.Minute))
 }

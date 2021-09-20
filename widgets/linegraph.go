@@ -1,4 +1,4 @@
-package termui
+package widgets
 
 import (
 	"image"
@@ -6,19 +6,20 @@ import (
 	"strconv"
 	"unicode"
 
-	. "github.com/gizak/termui/v3"
-	drawille "github.com/xxxserxxx/gotop/v4/termui/drawille-go"
+	"github.com/gizak/termui/v3"
+	"github.com/xxxserxxx/gotop/v4/widgets/drawille-go"
 )
 
 // LineGraph draws a graph like this ⣀⡠⠤⠔⣁ of data points.
 type LineGraph struct {
-	*Block
+	*termui.Block
 
 	// Data is a size-managed data set for the graph. Each entry is a line;
 	// each sub-array are points in the line. The maximum size of the
 	// sub-arrays is controlled by the size of the canvas. This
 	// array is **not** thread-safe. Do not modify this array, or it's
 	// sub-arrays in threads different than the thread that calls `Draw()`
+	// TODO prevent this from growing forever
 	Data map[string][]float64
 	// The labels drawn on the graph for each of the lines; the key is shared
 	// by Data; the value is the text that will be rendered.
@@ -26,36 +27,36 @@ type LineGraph struct {
 
 	HorizontalScale int
 
-	LineColors       map[string]Color
-	LabelStyles      map[string]Modifier
-	DefaultLineColor Color
+	LineColors       map[string]termui.Color
+	LabelStyles      map[string]termui.Modifier
+	DefaultLineColor termui.Color
 
 	seriesList numbered
 }
 
 func NewLineGraph() *LineGraph {
 	return &LineGraph{
-		Block: NewBlock(),
+		Block: termui.NewBlock(),
 
 		Data:   make(map[string][]float64),
 		Labels: make(map[string]string),
 
 		HorizontalScale: 5,
 
-		LineColors:  make(map[string]Color),
-		LabelStyles: make(map[string]Modifier),
+		LineColors:  make(map[string]termui.Color),
+		LabelStyles: make(map[string]termui.Modifier),
 	}
 }
 
-func (self *LineGraph) Draw(buf *Buffer) {
+func (self *LineGraph) Draw(buf *termui.Buffer) {
 	self.Block.Draw(buf)
 	// we render each data point on to the canvas then copy over the braille to the buffer at the end
 	// fyi braille characters have 2x4 dots for each character
 	c := drawille.NewCanvas()
 	// used to keep track of the braille colors until the end when we render the braille to the buffer
-	colors := make([][]Color, self.Inner.Dx()+2)
+	colors := make([][]termui.Color, self.Inner.Dx()+2)
 	for i := range colors {
-		colors[i] = make([]Color, self.Inner.Dy()+2)
+		colors[i] = make([]termui.Color, self.Inner.Dy()+2)
 	}
 
 	if len(self.seriesList) != len(self.Data) {
@@ -122,7 +123,7 @@ func (self *LineGraph) Draw(buf *Buffer) {
 				}
 				if char != 10240 { // empty braille character
 					buf.SetCell(
-						NewCell(char, NewStyle(colors[x][y])),
+						termui.NewCell(char, termui.NewStyle(colors[x][y])),
 						image.Pt(self.Inner.Min.X+x-1, self.Inner.Min.Y+y-1),
 					)
 				}
@@ -146,7 +147,7 @@ func (self *LineGraph) Draw(buf *Buffer) {
 		}
 		seriesLabelStyle, ok := self.LabelStyles[seriesName]
 		if !ok {
-			seriesLabelStyle = ModifierClear
+			seriesLabelStyle = termui.ModifierClear
 		}
 
 		// render key ontop, but let braille be drawn over space characters
@@ -157,7 +158,7 @@ func (self *LineGraph) Draw(buf *Buffer) {
 		for k, char := range str {
 			if char != ' ' {
 				buf.SetCell(
-					NewCell(char, NewStyle(seriesLineColor, ColorClear, seriesLabelStyle)),
+					termui.NewCell(char, termui.NewStyle(seriesLineColor, termui.ColorClear, seriesLabelStyle)),
 					image.Pt(xoff+self.Inner.Min.X+2+k, yoff+self.Inner.Min.Y+i+1),
 				)
 			}

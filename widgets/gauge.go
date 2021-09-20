@@ -1,22 +1,22 @@
-package termui
+package widgets
 
 import (
-	. "github.com/gizak/termui/v3"
-	gizak "github.com/gizak/termui/v3/widgets"
+	"github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
 )
 
 // LineGraph implements a line graph of data points.
 type Gauge struct {
-	*gizak.Gauge
+	*widgets.Gauge
 }
 
 func NewGauge() *Gauge {
 	return &Gauge{
-		Gauge: gizak.NewGauge(),
+		Gauge: widgets.NewGauge(),
 	}
 }
 
-func (self *Gauge) Draw(buf *Buffer) {
+func (self *Gauge) Draw(buf *termui.Buffer) {
 	self.Gauge.Draw(buf)
 	self.Gauge.SetRect(self.Min.X, self.Min.Y, self.Inner.Dx(), self.Inner.Dy())
 }

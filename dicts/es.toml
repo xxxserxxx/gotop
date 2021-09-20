@@ -107,6 +107,7 @@ configsyntax="0| mal sintaxis en el archivo de configuración; debiera ser CLAVE
 deprecation="1| línea {0}: '{1}' es obsoleto. {1}={2} ignorado"
 line="2| línea #{0}: {1}"
 tempscale="3| valor TempScale inválido {0}"
+unknown="4| unknown configuration option {0}"
 
 
 [error]
@@ -129,6 +130,7 @@ findlayout="19| no se pudo encontrar el archivo de diseño {0}: {1}"
 logopen="20| no se pudo abrir el archivo de registro {0}: {1}"
 table="21| valor de TopRow de widget de tabla menos de 0. TopRow: {0}"
 nohostname="22| no se pudo obtener el nombre de máquina: {0}"
+unknowndevice="23| unknown device {0}"
 
 [layout.error]
 widget="23| Nombre de widget no válido {0}.  Debe ser uno de {1}"

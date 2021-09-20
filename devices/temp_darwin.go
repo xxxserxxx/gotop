@@ -1,3 +1,4 @@
+//go:build darwin
 // +build darwin
 
 package devices
@@ -6,17 +7,13 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/csv"
-	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/host"
 	"io"
 	"log"
 )
 
 // All possible thermometers
-func devs() []string {
-	// Did we already populate the sensorMap?
-	if sensorMap != nil {
-		return defs()
-	}
+func thermalSensorNames() []string {
 	// Otherwise, get the sensor data from the system & filter it
 	ids := loadIDs()
 	sensors, err := host.SensorsTemperatures()
@@ -25,25 +22,34 @@ func devs() []string {
 		return []string{}
 	}
 	rv := make([]string, 0, len(sensors))
-	sensorMap = make(map[string]string)
 	for _, sensor := range sensors {
 		// 0-value sensors are not implemented
 		if sensor.Temperature == 0 {
 			continue
 		}
 		if label, ok := ids[sensor.SensorKey]; ok {
-			sensorMap[sensor.SensorKey] = label
 			rv = append(rv, label)
 		}
 	}
 	return rv
 }
 
-// Only the ones filtered
-func defs() []string {
-	rv := make([]string, 0, len(sensorMap))
-	for _, val := range sensorMap {
-		rv = append(rv, val)
+func thermalSensorLabels() []string {
+	ids := loadIDs()
+	sensors, err := host.SensorsTemperatures()
+	if err != nil {
+		log.Printf("error getting sensor list for temps: %s", err)
+		return []string{}
+	}
+	rv := make([]string, 0, len(sensors))
+	for _, sensor := range sensors {
+		// 0-value sensors are not implemented
+		if sensor.Temperature == 0 {
+			continue
+		}
+		if _, ok := ids[sensor.SensorKey]; ok {
+			rv = append(rv, sensor.SensorKey)
+		}
 	}
 	return rv
 }

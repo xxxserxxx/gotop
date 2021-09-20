@@ -1,30 +1,22 @@
-// +build linux darwin
+//go:build linux || darwin || windows
 
 package devices
 
 import (
-	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/host"
 )
 
-func init() {
-	devs() // Populate the sensorMap
-	RegisterTemp(getTemps)
-	RegisterDeviceList(Temperatures, devs, defs)
-}
-
-func getTemps(temps map[string]int) map[string]error {
+func (t *Temperature) Update() error {
 	sensors, err := host.SensorsTemperatures()
 	if err != nil {
-		return map[string]error{"gopsutil host": err}
+		return err
 	}
+	tmps := make(map[string]float64)
 	for _, sensor := range sensors {
-		label := sensorMap[sensor.SensorKey]
-		if _, ok := temps[label]; ok {
-			temps[label] = int(sensor.Temperature)
+		if _, ok := t.temps[sensor.SensorKey]; ok {
+			tmps[sensor.SensorKey] = sensor.Temperature
 		}
 	}
+	t.temps = tmps
 	return nil
 }
-
-// Optimization to avoid string manipulation every update
-var sensorMap map[string]string

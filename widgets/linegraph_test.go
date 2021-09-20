@@ -1,4 +1,4 @@
-package termui
+package widgets
 
 import "testing"
 import "sort"

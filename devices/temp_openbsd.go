@@ -1,3 +1,4 @@
+//go:build openbsd
 // +build openbsd
 
 package devices
@@ -15,12 +16,7 @@ import (
 	"unsafe"
 )
 
-// TODO: Add sensor filtering
-func init() {
-	RegisterTemp(update)
-}
-
-func update(temps map[string]int) map[string]error {
+func (t *Temperature) Update() error {
 	mib := []C.int{0, 1, 2, 3, 4}
 
 	var snsrdev C.struct_sensordev
@@ -30,6 +26,7 @@ func update(temps map[string]int) map[string]error {
 	mib[1] = C.HW_SENSORS
 	mib[3] = C.SENSOR_TEMP
 
+	tmps := make(map[string]float64)
 	var i C.int
 	for i = 0; ; i++ {
 		mib[2] = i
@@ -41,19 +38,20 @@ func update(temps map[string]int) map[string]error {
 				break
 			}
 		}
-		getTemp(temps, mib, 4, &snsrdev, 0)
+		t.getTemp(mib, 4, &snsrdev, 0, tmps)
 	}
+	t.temps = tmps
 	return nil
 }
 
-func getTemp(temps map[string]int, mib []C.int, mlen int, snsrdev *C.struct_sensordev, index int) {
+func (t Temperature) getTemp(mib []C.int, mlen int, snsrdev *C.struct_sensordev, index int, tmps map[string]float64) {
 	switch mlen {
 	case 4:
 		k := mib[3]
 		var numt C.int
 		for numt = 0; numt < snsrdev.maxnumt[k]; numt++ {
 			mib[4] = numt
-			getTemp(temps, mib, mlen+1, snsrdev, int(numt))
+			t.getTemp(mib, mlen+1, snsrdev, int(numt), tmps)
 		}
 	case 5:
 		var snsr C.struct_sensor
@@ -65,11 +63,25 @@ func getTemp(temps map[string]int, mib []C.int, mlen int, snsrdev *C.struct_sens
 
 		if slen > 0 && (snsr.flags&C.SENSOR_FINVALID) == 0 {
 			key := C.GoString(&snsrdev.xname[0]) + ".temp" + strconv.Itoa(index)
-			temp := int((snsr.value - 273150000.0) / 1000000.0)
+			temp := (snsr.value - 273150000.0) / 1000000.0
 
 			if _, ok := temps[key]; ok {
-				temps[key] = temp
+				tmps[key] = temp
 			}
 		}
 	}
+}
+
+func thermalSensorNames() []string {
+	t.NewTemperature()
+	t.Update()
+	rv := make([]string, 0)
+	for n, _ := range t.temps {
+		rv = append(rv, n)
+	}
+	return rv
+}
+
+func thermalSensorLabels() []string {
+	return thermalSensorNames()
 }

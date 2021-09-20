@@ -107,6 +107,7 @@ configsyntax="0| bad config file syntax; should be KEY=VALUE, was {0}"
 deprecation="1| line {0}: '{1}' is deprecated.  Ignored {1}={2}"
 line="2| line #{0}: {1}"
 tempscale="3| invalid TempScale value {0}"
+unknown="4| unknown configuration option {0}"
 
 
 [error]
@@ -129,6 +130,7 @@ findlayout="19| failed to find layout file {0}: {1}"
 logopen="20| failed to open log file {0}: {1}"
 table="21| table widget TopRow value less than 0. TopRow: {0}"
 nohostname="22| could not get hostname: {0}"
+unknowndevice="23| unknown device {0}"
 
 [layout.error]
 widget="23| Invalid widget name {0}.  Must be one of {1}"

@@ -107,6 +107,7 @@ configsyntax="0| malbona agordo dosiero-sintakso; estu ŜLOSI=VALORO, estis {0}"
 deprecation="1| linio {0}: '{1}' malakceptas. Ignorita {1}={2}"
 line="2| linio #{0}: {1}"
 tempscale="3| malvalida TempScale-valoro {0}"
+unknown="4| unknown configuration option {0}"
 
 
 [error]
@@ -129,6 +130,7 @@ findlayout="19| malsukcesis trovi aranĝan dosieron {0}: {1}"
 logopen="20| malsukcesis malfermi enskribi dosieron {0}: {1}"
 table="21| Tabla fenestraĵo TopRow-valoro malpli ol 0. TopRow: {0}"
 nohostname="22| Ne povis akiri hostname: {0}"
+unknowndevice="23| unknown device {0}"
 
 [layout.error]
 widget="23| Malvalida fenestra nomo {0}. Devas esti unu el {1}"

@@ -14,16 +14,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > - **Security**: in case of vulnerabilities.
 
 
-## [4.x.y]
+## [4.x.y] PENDING
 
 ### Added
 
 - Headless mode -- run gotop without UI, for more practical `-x`
+- Adds ability to disable all local sensors (for creating remote-only monitors).
+  See [Remote Monitoring](docs/remote-monitoring.md).
 
 ### Changed
 
 - Moved all metrics from widgets to devices, where they should have been in the
   first place.
+- ca. 22% less CPU use, *on my systems*
+- Refactored to remove all of the code that I added to support plugins. It was
+  confusing, and not doing anything since there wasn't a good way to solve the
+  Go plugin problem. This would also have reduced the LOC of the project, except
+  that some non-device-ified widgets were device-ified.
 
 
 ## [4.1.2] 2021-07-20

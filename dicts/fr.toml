@@ -107,6 +107,7 @@ configsyntax="0| syntaxe incorrecte dans le fichier de configuration ; devrait �
 deprecation="1| ligne {0}: '{1}' est obsolète.  {1}={2} ignoré"
 line="2| ligne #{0}: {1}"
 tempscale="3| valeur TempScale invalide : {0}"
+unknown="4| unknown configuration option {0}"
 
 
 [error]
@@ -129,6 +130,7 @@ findlayout="19| impossible de lire le fichier de disposition {0}: {1}"
 logopen="20| impossible d'ouvrir le fichier de log {0}: {1}"
 table="21| valeur TopRow inférieure à 0. TopRow: {0}"
 nohostname="22| ne peut obtenir le nom d'hôte: {0}"
+unknowndevice="23| unknown device {0}"
 
 [layout.error]
 widget="23| Nom de widget invalide {0}.  Doit être l'un de {1}"

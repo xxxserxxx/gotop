@@ -1,18 +1,18 @@
-package termui
+package widgets
 
 import (
 	"fmt"
 	"image"
 	"log"
-	"strings"
 	"strconv"
+	"strings"
 
-	. "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3"
 	"github.com/xxxserxxx/lingo/v2"
 )
 
 type Table struct {
-	*Block
+	*termui.Block
 
 	Header []string
 	Rows   [][]string
@@ -22,7 +22,7 @@ type Table struct {
 	PadLeft   int
 
 	ShowCursor  bool
-	CursorColor Color
+	CursorColor termui.Color
 
 	ShowLocation bool
 
@@ -39,7 +39,7 @@ type Table struct {
 // NewTable returns a new Table instance
 func NewTable() *Table {
 	return &Table{
-		Block:       NewBlock(),
+		Block:       termui.NewBlock(),
 		SelectedRow: 0,
 		TopRow:      0,
 		UniqueCol:   0,
@@ -47,7 +47,7 @@ func NewTable() *Table {
 	}
 }
 
-func (self *Table) Draw(buf *Buffer) {
+func (self *Table) Draw(buf *termui.Buffer) {
 	self.Block.Draw(buf)
 
 	if self.ShowLocation {
@@ -77,7 +77,7 @@ func (self *Table) Draw(buf *Buffer) {
 		}
 		buf.SetString(
 			h,
-			NewStyle(Theme.Default.Fg, ColorClear, ModifierBold),
+			termui.NewStyle(termui.Theme.Default.Fg, termui.ColorClear, termui.ModifierBold),
 			image.Pt(self.Inner.Min.X+colXPos[i]-1, self.Inner.Min.Y),
 		)
 	}
@@ -94,11 +94,11 @@ func (self *Table) Draw(buf *Buffer) {
 		y := (rowNum + 2) - self.TopRow
 
 		// prints cursor
-		style := NewStyle(Theme.Default.Fg)
+		style := termui.NewStyle(termui.Theme.Default.Fg)
 		if self.ShowCursor {
 			if (self.SelectedItem == "" && rowNum == self.SelectedRow) || (self.SelectedItem != "" && self.SelectedItem == row[self.UniqueCol]) {
 				style.Fg = self.CursorColor
-				style.Modifier = ModifierReverse
+				style.Modifier = termui.ModifierReverse
 				for _, width := range self.ColWidths {
 					if width == 0 {
 						continue
@@ -123,7 +123,7 @@ func (self *Table) Draw(buf *Buffer) {
 			if width > (self.Inner.Dx()-colXPos[i])+1 {
 				continue
 			}
-			r := TrimString(row[i], width)
+			r := termui.TrimString(row[i], width)
 			buf.SetString(
 				r,
 				style,
@@ -133,7 +133,7 @@ func (self *Table) Draw(buf *Buffer) {
 	}
 }
 
-func (self *Table) drawLocation(buf *Buffer) {
+func (self *Table) drawLocation(buf *termui.Buffer) {
 	total := len(self.Rows)
 	topRow := self.TopRow + 1
 	if topRow > total {

@@ -1,23 +1,19 @@
+//go:build !freebsd
 // +build !freebsd
 
 package devices
 
-import (
-	psMem "github.com/shirou/gopsutil/mem"
-)
+import "github.com/shirou/gopsutil/v3/mem"
 
-func init() {
-	mf := func(mems map[string]MemoryInfo) map[string]error {
-		memory, err := psMem.SwapMemory()
-		if err != nil {
-			return map[string]error{"Swap": err}
-		}
-		mems["Swap"] = MemoryInfo{
-			Total:       memory.Total,
-			Used:        memory.Used,
-			UsedPercent: memory.UsedPercent,
-		}
-		return nil
+// UpdateSwap adds a "Swap" memory entry.
+func (m Memory) UpdateSwap() error {
+	memory, err := mem.SwapMemory()
+	if err != nil {
+		return err
 	}
-	RegisterMem(mf)
+	me := m["Swap"]
+	me.Total = memory.Total
+	me.Used = memory.Used
+	me.UsedPercent = memory.UsedPercent
+	return nil
 }

@@ -4,77 +4,53 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/VictoriaMetrics/metrics"
-
 	"github.com/xxxserxxx/gotop/v4/devices"
-	ui "github.com/xxxserxxx/gotop/v4/termui"
 	"github.com/xxxserxxx/gotop/v4/utils"
 )
 
+// TODO Colors are wrong for #mem > 2
 type MemWidget struct {
-	*ui.LineGraph
+	*LineGraph
 	updateInterval time.Duration
+	mems           devices.Memory
 }
 
 func NewMemWidget(updateInterval time.Duration, horizontalScale int) *MemWidget {
 	widg := &MemWidget{
-		LineGraph:      ui.NewLineGraph(),
+		LineGraph:      NewLineGraph(),
 		updateInterval: updateInterval,
+		mems:           devices.NewMemory(),
 	}
 	widg.Title = tr.Value("widget.label.mem")
 	widg.HorizontalScale = horizontalScale
-	mems := make(map[string]devices.MemoryInfo)
-	devices.UpdateMem(mems)
-	for name, mem := range mems {
-		if mem.Total > 0 {
-			widg.Data[name] = []float64{0}
-			widg.renderMemInfo(name, mem)
-		}
-	}
-
-	go func() {
-		for range time.NewTicker(widg.updateInterval).C {
-			widg.Lock()
-			devices.UpdateMem(mems)
-			for label, mi := range mems {
-				if mi.Total > 0 {
-					widg.renderMemInfo(label, mi)
-				}
-			}
-			widg.Unlock()
-		}
-	}()
 
 	return widg
 }
 
-func (mem *MemWidget) EnableMetric() {
-	mems := make(map[string]devices.MemoryInfo)
-	devices.UpdateMem(mems)
-	for l := range mems {
-		lc := l
-		metrics.NewGauge(makeName("memory", l), func() float64 {
-			if ds, ok := mem.Data[lc]; ok {
-				return ds[len(ds)-1]
-			}
-			return 0.0
-		})
+func (mw *MemWidget) Attach(m devices.Memory) {
+	for name, me := range m {
+		mw.mems[name] = me
+		mw.Data[name] = []float64{0}
+	}
+}
+
+func (widg *MemWidget) Update() {
+	for name, mem := range widg.mems {
+		if mem.Total > 0 {
+			widg.Data[name] = append(widg.Data[name], mem.UsedPercent)
+			memoryTotalBytes, memoryTotalMagnitude := utils.ConvertBytes(mem.Total)
+			memoryUsedBytes, memoryUsedMagnitude := utils.ConvertBytes(mem.Used)
+			widg.Labels[name] = fmt.Sprintf("%3.0f%% %5.1f%s/%.0f%s",
+				mem.UsedPercent,
+				memoryUsedBytes+0.5,
+				memoryUsedMagnitude,
+				memoryTotalBytes+0.5,
+				memoryTotalMagnitude,
+			)
+		}
 	}
 }
 
 func (mem *MemWidget) Scale(i int) {
 	mem.LineGraph.HorizontalScale = i
-}
-
-func (mem *MemWidget) renderMemInfo(line string, memoryInfo devices.MemoryInfo) {
-	mem.Data[line] = append(mem.Data[line], memoryInfo.UsedPercent)
-	memoryTotalBytes, memoryTotalMagnitude := utils.ConvertBytes(memoryInfo.Total)
-	memoryUsedBytes, memoryUsedMagnitude := utils.ConvertBytes(memoryInfo.Used)
-	mem.Labels[line] = fmt.Sprintf("%3.0f%% %5.1f%s/%.0f%s",
-		memoryInfo.UsedPercent,
-		memoryUsedBytes,
-		memoryUsedMagnitude,
-		memoryTotalBytes,
-		memoryTotalMagnitude,
-	)
 }

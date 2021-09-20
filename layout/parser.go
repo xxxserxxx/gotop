@@ -63,9 +63,9 @@ The syntax for the layout specification is:
 15. Lines beginning with "#" will be ignored. It must be the first character of
     the line.
 **********************************************************************************/
-func ParseLayout(i io.Reader) layout {
+func ParseLayout(i io.Reader) Layout {
 	r := bufio.NewScanner(i)
-	rv := layout{Rows: make([][]widgetRule, 0)}
+	rv := Layout{Rows: make([][]widgetRule, 0)}
 	var lineNo int
 	for r.Scan() {
 		l := strings.TrimSpace(r.Text())

@@ -4,24 +4,21 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 
 	//_ "net/http/pprof"
 
-	"github.com/VictoriaMetrics/metrics"
-	jj "github.com/cloudfoundry-attic/jibber_jabber"
-	ui "github.com/gizak/termui/v3"
+	"github.com/cloudfoundry-attic/jibber_jabber"
 	"github.com/shibukawa/configdir"
 	"github.com/xxxserxxx/lingo/v2"
 	"github.com/xxxserxxx/opflag"
@@ -29,19 +26,11 @@ import (
 	"github.com/xxxserxxx/gotop/v4"
 	"github.com/xxxserxxx/gotop/v4/colorschemes"
 	"github.com/xxxserxxx/gotop/v4/devices"
-	"github.com/xxxserxxx/gotop/v4/layout"
 	"github.com/xxxserxxx/gotop/v4/logging"
-	w "github.com/xxxserxxx/gotop/v4/widgets"
+	"github.com/xxxserxxx/gotop/v4/tui"
 )
 
-const (
-	graphHorizontalScaleDelta = 3
-	defaultUI                 = "2:cpu\ndisk/1 2:mem/2\ntemp\n2:net 2:procs"
-	minimalUI                 = "cpu\nmem procs"
-	batteryUI                 = "cpu/2 batt/1\ndisk/1 2:mem/2\ntemp\nnet procs"
-	procsUI                   = "cpu 4:procs\ndisk\nmem\nnet"
-	kitchensink               = "3:cpu/2 3:mem/1\n4:temp/1 3:disk/2\npower\n3:net 3:procs"
-)
+// TODO add build flags to disable TUI (headless builds)
 
 var (
 	// Version of the program; set during build from git tags
@@ -49,13 +38,10 @@ var (
 	// BuildDate when the program was compiled; set during build
 	BuildDate    = "Hadean"
 	conf         gotop.Config
-	help         *w.HelpMenu
-	bar          *w.StatusBar
 	stderrLogger = log.New(os.Stderr, "", 0)
 	tr           lingo.Translations
 )
 
-// TODO disable local devices
 func parseArgs() error {
 	cds := conf.ConfigDir.QueryFolders(configdir.All)
 	cpaths := make([]string, len(cds))
@@ -73,16 +59,20 @@ func parseArgs() error {
 	opflag.BoolVarP(&conf.Statusbar, "statusbar", "s", conf.Statusbar, tr.Value("args.statusbar"))
 	opflag.DurationVarP(&conf.UpdateInterval, "rate", "r", conf.UpdateInterval, tr.Value("args.rate"))
 	opflag.StringVarP(&conf.Layout, "layout", "l", conf.Layout, tr.Value("args.layout"))
-	opflag.StringVarP(&conf.NetInterface, "interface", "i", "all", tr.Value("args.net"))
+	ifaces := opflag.String("interface", "", tr.Value("args.net"))
 	opflag.StringVarP(&conf.ExportPort, "export", "x", conf.ExportPort, tr.Value("args.export"))
 	opflag.BoolVarP(&conf.Mbps, "mbps", "", conf.Mbps, tr.Value("args.mbps"))
 	opflag.BoolVar(&conf.Test, "test", conf.Test, tr.Value("args.test"))
 	opflag.StringP("", "C", "", tr.Value("args.conffile"))
 	opflag.BoolVarP(&conf.Nvidia, "nvidia", "", conf.Nvidia, "Enable NVidia GPU support")
-	// TODO Add a disable-local-sensors
+	remoteName := opflag.String("remote-name", "", "Remote: name of remote gotop")
+	remoteURL := opflag.String("remote-url", "", "Remote: URL of remote gotop")
+	remoteRefresh := opflag.Duration("remote-refresh", 0, "Remote: Frequency to refresh data, in seconds")
+	opflag.BoolVarP(&conf.NoLocal, "no-local", "", false, "Disable local(host) sensors")
 	opflag.BoolVarP(&conf.Headless, "headless", "", conf.Headless, "Disable user interface")
 	list := opflag.String("list", "", tr.Value("args.list"))
 	wc := opflag.Bool("write-config", false, tr.Value("args.write"))
+	devices := opflag.String("devices", "", tr.Value("args.devices"))
 	opflag.SortFlags = false
 	opflag.Usage = func() {
 		fmt.Fprintf(os.Stderr, tr.Value("usage", os.Args[0]))
@@ -102,11 +92,20 @@ func parseArgs() error {
 	if err != nil {
 		return err
 	}
+	if *devices != "" {
+		conf.Devices = strings.Split("devices", ",")
+		if len(conf.Devices) == 0 {
+			conf.Devices = gotop.AllDevices()
+		}
+	}
 	conf.Colorscheme = cs
 	if *fahrenheit {
 		conf.TempScale = 'F'
 	} else {
 		conf.TempScale = 'C'
+	}
+	if *ifaces != "" {
+		conf.NetInterface = strings.Split(*ifaces, ",")
 	}
 	if *list != "" {
 		switch *list {
@@ -155,6 +154,25 @@ func parseArgs() error {
 	if conf.Nvidia {
 		conf.ExtensionVars["nvidia"] = "true"
 	}
+	if *remoteURL != "" {
+		if u, e := url.Parse(*remoteURL); e == nil {
+			r := gotop.Remote{}
+			r.URL = *remoteURL
+			if remoteName != nil {
+				r.Name = *remoteName
+			} else {
+				r.Name = u.Hostname()
+			}
+			if remoteRefresh != nil {
+				r.Refresh = *remoteRefresh
+			} else {
+				r.Refresh = 5 * time.Second
+			}
+			conf.Remotes[r.Name] = r
+		} else {
+			fmt.Println(e)
+		}
+	}
 	if *wc {
 		path, err := conf.Write()
 		if err != nil {
@@ -167,225 +185,31 @@ func parseArgs() error {
 	return nil
 }
 
-func setDefaultTermuiColors(c gotop.Config) {
-	ui.Theme.Default = ui.NewStyle(ui.Color(c.Colorscheme.Fg), ui.Color(c.Colorscheme.Bg))
-	ui.Theme.Block.Title = ui.NewStyle(ui.Color(c.Colorscheme.BorderLabel), ui.Color(c.Colorscheme.Bg))
-	ui.Theme.Block.Border = ui.NewStyle(ui.Color(c.Colorscheme.BorderLine), ui.Color(c.Colorscheme.Bg))
-}
-
-func eventLoop(c gotop.Config, grid *layout.MyGrid) {
-	drawTicker := time.NewTicker(c.UpdateInterval).C
-
-	// handles kill signal sent to gotop
-	sigTerm := make(chan os.Signal, 2)
-	signal.Notify(sigTerm, os.Interrupt, syscall.SIGTERM)
-
-	uiEvents := ui.PollEvents()
-
-	previousKey := ""
-
-	for {
-		select {
-		case <-sigTerm:
-			return
-		case <-drawTicker:
-			if !c.HelpVisible {
-				ui.Render(grid)
-				if c.Statusbar {
-					ui.Render(bar)
-				}
-			}
-		case e := <-uiEvents:
-			if grid.Proc != nil && grid.Proc.HandleEvent(e) {
-				ui.Render(grid.Proc)
-				break
-			}
-			switch e.ID {
-			case "q", "<C-c>":
-				return
-			case "?":
-				c.HelpVisible = !c.HelpVisible
-			case "<Resize>":
-				payload := e.Payload.(ui.Resize)
-				termWidth, termHeight := payload.Width, payload.Height
-				if c.Statusbar {
-					grid.SetRect(0, 0, termWidth, termHeight-1)
-					bar.SetRect(0, termHeight-1, termWidth, termHeight)
-				} else {
-					grid.SetRect(0, 0, payload.Width, payload.Height)
-				}
-				help.Resize(payload.Width, payload.Height)
-				ui.Clear()
-			}
-
-			if c.HelpVisible {
-				switch e.ID {
-				case "?":
-					ui.Clear()
-					ui.Render(help)
-				case "<Escape>":
-					c.HelpVisible = false
-					ui.Render(grid)
-				case "<Resize>":
-					ui.Render(help)
-				}
-			} else {
-				switch e.ID {
-				case "?":
-					ui.Render(grid)
-				case "h":
-					c.GraphHorizontalScale += graphHorizontalScaleDelta
-					for _, item := range grid.Lines {
-						item.Scale(c.GraphHorizontalScale)
-					}
-					ui.Render(grid)
-				case "l":
-					if c.GraphHorizontalScale > graphHorizontalScaleDelta {
-						c.GraphHorizontalScale -= graphHorizontalScaleDelta
-						for _, item := range grid.Lines {
-							item.Scale(c.GraphHorizontalScale)
-							ui.Render(item)
-						}
-					}
-				case "b":
-					if grid.Net != nil {
-						grid.Net.Mbps = !grid.Net.Mbps
-					}
-				case "<Resize>":
-					ui.Render(grid)
-					if c.Statusbar {
-						ui.Render(bar)
-					}
-				case "<MouseLeft>":
-					if grid.Proc != nil {
-						payload := e.Payload.(ui.Mouse)
-						grid.Proc.HandleClick(payload.X, payload.Y)
-						ui.Render(grid.Proc)
-					}
-				case "k", "<Up>", "<MouseWheelUp>":
-					if grid.Proc != nil {
-						grid.Proc.ScrollUp()
-						ui.Render(grid.Proc)
-					}
-				case "j", "<Down>", "<MouseWheelDown>":
-					if grid.Proc != nil {
-						grid.Proc.ScrollDown()
-						ui.Render(grid.Proc)
-					}
-				case "<Home>":
-					if grid.Proc != nil {
-						grid.Proc.ScrollTop()
-						ui.Render(grid.Proc)
-					}
-				case "g":
-					if grid.Proc != nil {
-						if previousKey == "g" {
-							grid.Proc.ScrollTop()
-							ui.Render(grid.Proc)
-						}
-					}
-				case "G", "<End>":
-					if grid.Proc != nil {
-						grid.Proc.ScrollBottom()
-						ui.Render(grid.Proc)
-					}
-				case "<C-d>":
-					if grid.Proc != nil {
-						grid.Proc.ScrollHalfPageDown()
-						ui.Render(grid.Proc)
-					}
-				case "<C-u>":
-					if grid.Proc != nil {
-						grid.Proc.ScrollHalfPageUp()
-						ui.Render(grid.Proc)
-					}
-				case "<C-f>":
-					if grid.Proc != nil {
-						grid.Proc.ScrollPageDown()
-						ui.Render(grid.Proc)
-					}
-				case "<C-b>":
-					if grid.Proc != nil {
-						grid.Proc.ScrollPageUp()
-						ui.Render(grid.Proc)
-					}
-				case "d":
-					if grid.Proc != nil {
-						if previousKey == "d" {
-							grid.Proc.KillProc("SIGTERM")
-						}
-					}
-				case "3":
-					if grid.Proc != nil {
-						if previousKey == "d" {
-							grid.Proc.KillProc("SIGQUIT")
-						}
-					}
-				case "9":
-					if grid.Proc != nil {
-						if previousKey == "d" {
-							grid.Proc.KillProc("SIGKILL")
-						}
-					}
-				case "<Tab>":
-					if grid.Proc != nil {
-						grid.Proc.ToggleShowingGroupedProcs()
-						ui.Render(grid.Proc)
-					}
-				case "m", "c", "p":
-					if grid.Proc != nil {
-						grid.Proc.ChangeProcSortMethod(w.ProcSortMethod(e.ID))
-						ui.Render(grid.Proc)
-					}
-				case "/":
-					if grid.Proc != nil {
-						grid.Proc.SetEditingFilter(true)
-						ui.Render(grid.Proc)
-					}
-				}
-
-				if previousKey == e.ID {
-					previousKey = ""
-				} else {
-					previousKey = e.ID
-				}
-			}
-
-		}
-	}
-}
-
-// FIXME CPU use regression
-// TODO add CPU freq
 func main() {
-	// TODO: Make this an option, for performance testing
 	//go func() {
-	//	log.Fatal(http.ListenAndServe(":7777", nil))
+	//	log.Fatal(http.ListenAndServe(":7777", http.DefaultServeMux))
 	//}()
 
-	// This is just to make sure gotop returns a useful exit code, but also
-	// executes all defer statements and so cleans up before exit.  Sort of
-	// annoying work-around for a lack of a clean way to exit Go programs
-	// with exit codes.
-	ec := run()
-	if ec > 0 {
-		if ec < 2 {
-			logpath := filepath.Join(conf.ConfigDir.QueryCacheFolder().Path, logging.LOGFILE)
-			fmt.Println(tr.Value("error.checklog", logpath))
-			bs, _ := ioutil.ReadFile(logpath)
-			fmt.Println(string(bs))
+	var ec int
+	defer func() {
+		if ec > 0 {
+			if ec < 2 {
+				logpath := filepath.Join(conf.ConfigDir.QueryCacheFolder().Path, logging.LOGFILE)
+				fmt.Println(tr.Value("error.checklog", logpath))
+				bs, _ := ioutil.ReadFile(logpath)
+				fmt.Println(string(bs))
+			}
 		}
-	}
-	os.Exit(ec)
-}
+		os.Exit(ec)
+	}()
 
-func run() int {
 	ling, err := lingo.New("en_US", ".", gotop.Dicts)
 	if err != nil {
 		fmt.Printf("failed to load language files: %s\n", err)
-		return 2
+		ec = 2
+		return
 	}
-	lang, err := jj.DetectIETF()
+	lang, err := jibber_jabber.DetectIETF()
 	if err != nil {
 		lang = "en_US"
 	}
@@ -407,43 +231,46 @@ func run() int {
 	err = conf.Load()
 	if err != nil {
 		fmt.Println(tr.Value("error.configparse", err.Error()))
-		return 2
+		ec = 2
+		return
 	}
 	// Override with command line arguments
 	err = parseArgs()
 	if err != nil {
 		fmt.Println(tr.Value("error.cliparse", err.Error()))
-		return 2
+		ec = 2
+		return
 	}
 
 	logfile, err := logging.New(conf)
 	if err != nil {
 		fmt.Println(tr.Value("logsetup", err.Error()))
-		return 2
+		ec = 2
+		return
 	}
 	defer logfile.Close()
 
 	// device initialization errors do not stop execution
-	for _, err := range devices.Startup(conf.ExtensionVars) {
-		stderrLogger.Print(err)
-	}
+	// Build a list of requested devices
+	devs := make(map[string]bool)
 
-	lstream, err := getLayout(conf)
-	if err != nil {
-		stderrLogger.Print(err)
-		return 1
+	if len(conf.Remotes) > 0 {
+		devs["remote"] = true
 	}
-	ly := layout.ParseLayout(lstream)
+	if conf.Nvidia {
+		devs["nvidia"] = true
+	}
 
 	if conf.Test {
-		return runTests(conf)
+		ec = runTests(conf)
+		return
 	}
 
 	// TODO https://godoc.org/github.com/VictoriaMetrics/metrics#Set
 	if conf.ExportPort != "" {
 		go func() {
 			http.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
-				metrics.WritePrometheus(w, true)
+				conf.Metrics.WritePrometheus(w)
 			})
 			http.ListenAndServe(conf.ExportPort, nil)
 		}()
@@ -452,79 +279,46 @@ func run() int {
 	if conf.Headless {
 		if conf.ExportPort == "" {
 			fmt.Fprintln(os.Stdout, "metrics not being exported; did you forget --export?")
+			ec = 1
+			return
 		}
+		devs := make([]string, len(conf.Devices))
+		// First, check the layout; each widget has a default associated device
+		if !conf.NoLocal {
+			for i, dn := range conf.Devices {
+				devs[i] = dn
+			}
+		}
+		devInsts, errs := devices.Startup(devs, conf)
+		for _, err := range errs {
+			stderrLogger.Print(err)
+			ec = 1
+			return
+		}
+		devices.Spawn(devInsts, conf)
 		// No TUI; just wait for user to interrupt
+		fmt.Println("gotop running... press ^c to exit")
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
 		<-c
-		return 0
-	}
-
-	if err = ui.Init(); err != nil {
-		stderrLogger.Print(err)
-		return 1
-	}
-	defer ui.Close()
-
-	setDefaultTermuiColors(conf) // done before initializing widgets to allow inheriting colors
-	help = w.NewHelpMenu(tr)
-	if conf.Statusbar {
-		bar = w.NewStatusBar()
-	}
-
-	grid, err := layout.Layout(ly, conf)
-	if err != nil {
-		stderrLogger.Print(err)
-		return 1
-	}
-
-	termWidth, termHeight := ui.TerminalDimensions()
-	if conf.Statusbar {
-		grid.SetRect(0, 0, termWidth, termHeight-1)
 	} else {
-		grid.SetRect(0, 0, termWidth, termHeight)
-	}
-	help.Resize(termWidth, termHeight)
-
-	ui.Render(grid)
-	if conf.Statusbar {
-		bar.SetRect(0, termHeight-1, termWidth, termHeight)
-		ui.Render(bar)
-	}
-
-	eventLoop(conf, grid)
-	return 0
-}
-
-func getLayout(conf gotop.Config) (io.Reader, error) {
-	switch conf.Layout {
-	case "-":
-		return os.Stdin, nil
-	case "default":
-		return strings.NewReader(defaultUI), nil
-	case "minimal":
-		return strings.NewReader(minimalUI), nil
-	case "battery":
-		return strings.NewReader(batteryUI), nil
-	case "procs":
-		return strings.NewReader(procsUI), nil
-	case "kitchensink":
-		return strings.NewReader(kitchensink), nil
-	default:
-		folder := conf.ConfigDir.QueryFolderContainsFile(conf.Layout)
-		if folder == nil {
-			paths := make([]string, 0)
-			for _, d := range conf.ConfigDir.QueryFolders(configdir.Existing) {
-				paths = append(paths, d.Path)
-			}
-			return nil, fmt.Errorf(tr.Value("error.findlayout", conf.Layout, strings.Join(paths, ", ")))
-		}
-		lo, err := folder.ReadFile(conf.Layout)
+		ui, err := tui.New(conf)
 		if err != nil {
-			return nil, err
+			stderrLogger.Print(err)
+			ec = 1
+			return
 		}
-		return strings.NewReader(string(lo)), nil
+		defer ui.ShutdownUI()
+		err = ui.LoopUI()
+		if err != nil {
+			stderrLogger.Print(err)
+			ec = 1
+			return
+		}
 	}
+
+	ec = 0
+	return
 }
 
 func runTests(_ gotop.Config) int {
@@ -533,7 +327,7 @@ func runTests(_ gotop.Config) int {
 }
 
 func listDevices() {
-	ms := devices.Domains
+	ms := devices.Domains()
 	sort.Strings(ms)
 	for _, m := range ms {
 		fmt.Printf("%s:\n", m)

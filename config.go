@@ -14,15 +14,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/VictoriaMetrics/metrics"
 	"github.com/shibukawa/configdir"
 	"github.com/xxxserxxx/gotop/v4/colorschemes"
-	"github.com/xxxserxxx/gotop/v4/widgets"
 	"github.com/xxxserxxx/lingo/v2"
 )
 
-// TODO: load colorschemes, layouts, languages from online repo
+// TODO: load (additional) colorschemes, layouts, languages from online repo, if user requests
+// TODO utility program for benchmarking between versions
 
-// FIXME github action uses old(er) Go version that doesn't have embed
 //go:embed "dicts/*.toml"
 var Dicts embed.FS
 
@@ -38,11 +38,12 @@ type Config struct {
 	AverageLoad          bool
 	PercpuLoad           bool
 	Statusbar            bool
-	TempScale            widgets.TempScale
-	NetInterface         string
+	TempScale            TempScale
+	NetInterface         []string
 	Layout               string
 	MaxLogSize           int64
 	ExportPort           string
+	Metrics              *metrics.Set
 	Mbps                 bool
 	Temps                []string
 	Test                 bool
@@ -52,9 +53,28 @@ type Config struct {
 	Nvidia               bool
 	NvidiaRefresh        time.Duration
 	Headless             bool
+	Devices              []string
+	Remotes              map[string]Remote
+	NoLocal              bool
 }
 
-// FIXME parsing can't handle blank lines
+type Remote struct {
+	Name    string
+	URL     string
+	Refresh time.Duration
+}
+
+type TempScale rune
+
+const (
+	Celsius    TempScale = 'C'
+	Fahrenheit           = 'F'
+)
+
+func AllDevices() []string {
+	return []string{"batt", "cpu", "disk", "mem", "net", "temp"}
+}
+
 func NewConfig() Config {
 	cd := configdir.New("", "gotop")
 	cd.LocalPath, _ = filepath.Abs(".")
@@ -65,12 +85,15 @@ func NewConfig() Config {
 		UpdateInterval:       time.Second,
 		AverageLoad:          false,
 		PercpuLoad:           true,
-		TempScale:            widgets.Celsius,
+		TempScale:            Celsius,
 		Statusbar:            false,
-		NetInterface:         widgets.NetInterfaceAll,
+		NetInterface:         make([]string, 0),
 		MaxLogSize:           5000000,
 		Layout:               "default",
 		ExtensionVars:        make(map[string]string),
+		Remotes:              make(map[string]Remote),
+		Devices:              AllDevices(),
+		Metrics:              metrics.NewSet(),
 	}
 	conf.Colorscheme, _ = colorschemes.FromName(conf.ConfigDir, "default")
 	folder := conf.ConfigDir.QueryFolderContainsFile(CONFFILE)
@@ -105,6 +128,9 @@ func load(in io.Reader, conf *Config) error {
 	var lineNo int
 	for r.Scan() {
 		l := strings.TrimSpace(r.Text())
+		if len(l) == 0 {
+			continue
+		}
 		if l[0] == '#' {
 			continue
 		}
@@ -116,7 +142,30 @@ func load(in io.Reader, conf *Config) error {
 		ln := strconv.Itoa(lineNo)
 		switch key {
 		default:
-			conf.ExtensionVars[key] = kv[1]
+			// Look for remotes
+			if strings.HasPrefix(key, "remote-") {
+				parts := strings.Split(key, "-")
+				if len(parts) == 3 {
+					name := parts[1]
+					it := conf.Remotes[name]
+					if parts[2] == "url" {
+						it.URL = kv[1]
+					} else if parts[2] == "refresh" {
+						var err error
+						it.Refresh, err = time.ParseDuration(kv[1])
+						if err != nil {
+							return err
+						}
+					} else {
+						return fmt.Errorf(conf.Tr.Value("config.err.configsyntax", l))
+					}
+					conf.Remotes[name] = it
+				} else {
+					return fmt.Errorf(conf.Tr.Value("config.err.configsyntax", l))
+				}
+			} else {
+				log.Printf(conf.Tr.Value("config.err.unknown", key))
+			}
 		case "configdir", "logdir", "logfile":
 			log.Printf(conf.Tr.Value("config.err.deprecation", ln, key, kv[1]))
 		case graphhorizontalscale:
@@ -172,7 +221,7 @@ func load(in io.Reader, conf *Config) error {
 			}
 			conf.Statusbar = bv
 		case netinterface:
-			conf.NetInterface = kv[1]
+			conf.NetInterface = strings.Split(kv[1], ",")
 		case layout:
 			conf.Layout = kv[1]
 		case maxlogsize:
@@ -199,6 +248,12 @@ func load(in io.Reader, conf *Config) error {
 				return fmt.Errorf(conf.Tr.Value("config.err.line", ln, err.Error()))
 			}
 			conf.Headless = nv
+		case nolocal:
+			nv, err := strconv.ParseBool(kv[1])
+			if err != nil {
+				return fmt.Errorf(conf.Tr.Value("config.err.line", ln, err.Error()))
+			}
+			conf.NoLocal = nv
 		}
 	}
 
@@ -278,7 +333,9 @@ func marshal(c *Config) []byte {
 	fmt.Fprintln(buff, "# To configure the NVidia refresh rate, set a duration:")
 	fmt.Fprintln(buff, "#nvidiarefresh=30s")
 	fmt.Fprintln(buff, "# Set headless to true to disable TUI; most useful with `export`")
-	fmt.Fprintln(buff, "%s=%t\n", headless, c.Headless)
+	fmt.Fprintf(buff, "%s=%t\n", headless, c.Headless)
+	fmt.Fprintln(buff, "# With headless set, this determines which devices to start up (default is all)")
+	fmt.Fprintf(buff, "%s=%s\n", devices, strings.Join(c.Devices, ","))
 	return buff.Bytes()
 }
 
@@ -299,4 +356,6 @@ const (
 	temperatures         = "temperatures"
 	nvidia               = "nvidia"
 	headless             = "headless"
+	nolocal              = "nolocal"
+	devices              = "devices"
 )

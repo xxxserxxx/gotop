@@ -1,39 +1,62 @@
 package devices
 
-// TODO: https://github.com/elastic/go-sysinfo
-// TODO: https://github.com/mackerelio/go-osstat
-// TODO: https://github.com/akhenakh/statgo
-// TODO: https://github.com/jaypipes/ghw
-
 import (
 	"log"
-	"time"
+
+	"github.com/VictoriaMetrics/metrics"
+	"github.com/shirou/gopsutil/v3/cpu"
 )
 
-var cpuFuncs []func(map[string]int, bool) map[string]error
+type CPUs struct {
+	Name    string
+	Data    []float64
+	Average float64
+	Logical bool
+}
 
-// RegisterCPU adds a new CPU device to the CPU widget. labels returns the
-// names of the devices; they should be as short as possible, and the indexes
-// of the returned slice should align with the values returned by the percents
-// function.  The percents function should return the percent CPU usage of the
-// device(s), sliced over the time duration supplied.  If the bool argument to
-// percents is true, it is expected that the return slice
-//
-// labels may be called once and the value cached.  This means the number of
-// cores should not change dynamically.
-func RegisterCPU(f func(map[string]int, bool) map[string]error) {
-	cpuFuncs = append(cpuFuncs, f)
+func NewCPUs(name string, logical bool) CPUs {
+	return CPUs{
+		Name:    name,
+		Data:    make([]float64, 0),
+		Logical: logical,
+	}
+}
+
+func LocalCPUs(logical bool) CPUs {
+	l := NewCPUs("CPU", logical)
+	vals, err := cpu.Percent(0, logical)
+	if err != nil {
+		log.Printf("couldn't get local CPU information: %s", err)
+		return l
+	}
+	l.Data = vals
+	return l
 }
 
 // CPUPercent calculates the percentage of cpu used either per CPU or combined.
 // Returns one value per cpu, or a single value if percpu is set to false.
-func UpdateCPU(cpus map[string]int, interval time.Duration, logical bool) {
-	for _, f := range cpuFuncs {
-		errs := f(cpus, logical)
-		if errs != nil {
-			for k, e := range errs {
-				log.Printf("%s: %s", k, e)
-			}
-		}
+func (c *CPUs) Update() error {
+	vals, err := cpu.Percent(0, c.Logical)
+	if err != nil {
+		return err
+	}
+	c.Data = vals
+	c.Average = 0
+	for _, v := range vals {
+		c.Average += v
+	}
+	c.Average = c.Average / float64(len(vals))
+	return nil
+}
+
+func (c *CPUs) EnableMetrics(s *metrics.Set) {
+	s.NewGauge(makeName("cpu", "avg"), func() float64 {
+		return c.Average
+	})
+	for i := range c.Data {
+		idx := i
+		s.NewGauge(makeName("cpu", i), func() float64 {
+			return c.Data[idx]
+		})
 	}
 }

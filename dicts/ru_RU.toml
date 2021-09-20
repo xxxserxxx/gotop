@@ -99,6 +99,7 @@ configsyntax="0| Синтаксическая ошибка в файле; дол
 deprecation="1| Строчка {0}: '{1}' устарел. Игнорирутеся {1}={2}"
 line="2| line #{0}: {1}"
 tempscale="3| неправильное значение TempScale {0}"
+unknown="4| unknown configuration option {0}"
 
 
 [error]
@@ -121,6 +122,7 @@ findlayout="19| Не удалось найти файл раскладки {0}: 
 logopen="20| Не удалось открыть файл логов {0}: {1}"
 table="21| Значения виджета TopRow меньше чем 0. TopRow: {0}"
 nohostname="22| Не удалось получить название хоста: {0}"
+unknowndevice="23| unknown device {0}"
 
 [layout.error]
 widget="23| Неправильное название виджета {0}.  Должно быть одним из {1}"

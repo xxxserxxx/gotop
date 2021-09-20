@@ -2,80 +2,105 @@ package devices
 
 import (
 	"log"
-	"github.com/xxxserxxx/lingo/v2"
+	"strings"
+	"time"
+
+	"github.com/VictoriaMetrics/metrics"
+	"github.com/xxxserxxx/gotop/v4"
 )
 
-const (
-	Temperatures = "Temperatures" // Device domain for temperature sensors
-)
-
-// TODO: Redesign; this is not thread safe, and it's easy to write code that triggers concurrent modification panics. Channels?
-
-var Domains []string = []string{Temperatures}
-var _shutdownFuncs []func() error
-var _devs map[string][]string
-var _defaults map[string][]string
-var _startup []func(map[string]string) error
-var tr lingo.Translations
-
-// RegisterShutdown stores a function to be called by gotop on exit, allowing
-// extensions to properly release resources.  Extensions should register a
-// shutdown function IFF the extension is using resources that need to be
-// released.  The returned error will be logged, but no other action will be
-// taken.
-func RegisterShutdown(f func() error) {
-	_shutdownFuncs = append(_shutdownFuncs, f)
+type Device interface {
+	Update() error
+	EnableMetrics(*metrics.Set)
 }
 
-func RegisterStartup(f func(vars map[string]string) error) {
-	if _startup == nil {
-		_startup = make([]func(map[string]string) error, 0, 1)
-	}
-	_startup = append(_startup, f)
-}
-
-// Startup is after configuration has been parsed, and provides extensions with
-// any configuration data provided by the user.  An extension's registered
-// startup function should process and populate data at least once so that the
-// widgets have a full list of sensors, for (e.g.) setting up colors.
-func Startup(vars map[string]string) []error {
-	rv := make([]error, 0)
-	for _, f := range _startup {
-		err := f(vars)
-		if err != nil {
-			rv = append(rv, err)
+// Startup is after configuration has been parsed, and initializes devices.
+//
+// devices is a list of the devices to spin up; any specific device means a sensor
+// on the current machine. `nvidia` means NVidia GPU sensors, and any remote gotop
+// instances defined in c.Remotes will also be connected.
+//
+// Startup attempts to start everything and continues when it encounters errors; any
+// collected errors are returned in the error array, and devices which have errors
+// will not be included in the returned Device array.
+func Startup(devices []string, c gotop.Config) (map[string]Device, []error) {
+	devs := make(map[string]Device)
+	for _, d := range devices {
+		switch d {
+		case "batt", "power":
+			bat := LocalBatteries()
+			bat.Update()
+			devs["batt"] = &bat
+		case "cpu":
+			cpu := LocalCPUs(c.PercpuLoad)
+			cpu.Update()
+			devs[d] = &cpu
+		case "disk":
+			disk := LocalDisk()
+			disk.Update()
+			devs[d] = disk
+		case "mem":
+			mem := LocalMemory()
+			mem.Update()
+			devs[d] = mem
+		case "net":
+			net := LocalNetwork(c.NetInterface, false)
+			net.Update()
+			devs[d] = &net
+		case "temp":
+			tmp := LocalTemperature(c.Temps)
+			tmp.Update()
+			devs[d] = &tmp
+		case "procs":
+			// TODO procs not yet implemented as local device
+		case "remote", "nvidia":
+			// NOP handled below
+		default:
+			log.Printf(c.Tr.Value("error.unknowndevice", d))
 		}
 	}
-	return rv
-}
-
-// Shutdown will be called by the `main()` function if gotop is exited
-// cleanly.  It will call all of the registered shutdown functions of devices,
-// logging all errors but otherwise not responding to them.
-func Shutdown() {
-	for _, f := range _shutdownFuncs {
-		err := f()
+	if c.Nvidia {
+		dev, err := NewNVidia()
+		dev.Update()
 		if err != nil {
 			log.Print(err)
+		} else {
+			devs["nvidia"] = &dev
 		}
+	}
+	for _, r := range c.Remotes {
+		dev := NewRemote(r.Name, r.URL, r.Refresh)
+		dev.Update()
+		devs["remote-"+r.Name] = &dev
+	}
+	return devs, nil
+}
+
+// Spawn spins up threads for updating the devices.
+func Spawn(devs map[string]Device, c gotop.Config) {
+	for name, dev := range devs {
+		if c.ExportPort != "" {
+			dev.EnableMetrics(c.Metrics)
+		}
+		go func(n string, d Device) {
+			for range time.NewTicker(c.UpdateInterval).C {
+				err := d.Update()
+				if err != nil {
+					log.Print(err)
+					break
+				}
+			}
+		}(name, dev)
 	}
 }
 
-func RegisterDeviceList(typ string, all func() []string, def func() []string) {
-	if _devs == nil {
-		_devs = make(map[string][]string)
+func Domains() []string {
+	ad := gotop.AllDevices()
+	rv := make([]string, len(ad))
+	for i, d := range ad {
+		rv[i] = strings.Title(d)
 	}
-	if _defaults == nil {
-		_defaults = make(map[string][]string)
-	}
-	if _, ok := _devs[typ]; !ok {
-		_devs[typ] = []string{}
-	}
-	_devs[typ] = append(_devs[typ], all()...)
-	if _, ok := _defaults[typ]; !ok {
-		_defaults[typ] = []string{}
-	}
-	_defaults[typ] = append(_defaults[typ], def()...)
+	return rv
 }
 
 // Return a list of devices registered under domain, where `domain` is one of the
@@ -83,12 +108,16 @@ func RegisterDeviceList(typ string, all func() []string, def func() []string) {
 // `enabledOnly` flag determines whether all devices are returned (false), or
 // only the ones that have been enabled for the domain.
 func Devices(domain string, all bool) []string {
-	if all {
-		return _devs[domain]
+	switch domain {
+	case "Temperatures":
+		return thermalSensorNames()
+	case "Disk":
+		ps, _ := partitions()
+		return ps
+	case "Network":
+		is, _ := interfaces()
+		return is
+	default:
+		return []string{}
 	}
-	return _defaults[domain]
-}
-
-func SetTr(tra lingo.Translations) {
-	tr = tra
 }

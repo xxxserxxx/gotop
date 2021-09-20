@@ -1,3 +1,5 @@
+//go:build windows
+
 package widgets
 
 import (
@@ -5,7 +7,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 func getProcs() ([]Proc, error) {

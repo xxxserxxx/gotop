@@ -106,6 +106,7 @@ configsyntax="0| Fehlerhafte Syntax der Konfigurationsdatei: sollte KEY=VALUE se
 deprecation="1| Zeile {0}: '{1}' ist veraltet. Ignoriert {1}={2}"
 line="2| Zeile #{0}: {1}"
 tempscale="3| Ungültiger TempScale-Wert {0}"
+unknown="4| unknown configuration option {0}"
 
 
 [error]
@@ -128,6 +129,7 @@ findlayout="19| Layoutdatei konnte nicht gefunden werden {0}: {1}"
 logopen="20| Protokolldatei konnte nicht geöffnet werden {0}: {1}"
 table="21| Tabellen-Widget TopRow-Wert kleiner als 0. TopRow: {0}"
 nohostname="22| Hostname konnte nicht abgerufen werden: {0}"
+unknowndevice="23| unknown device {0}"
 
 [layout.error]
 widget="23| Ungültiger Widget-Name {0}. Muss einer von sein {1}"

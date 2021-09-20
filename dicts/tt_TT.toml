@@ -105,6 +105,7 @@ configsyntax="0| saw ,EULAV=YEK eb dluohs ;xatnys elif gifnoc dab {0}"
 deprecation="1| enil {0}: '{1}' derongI  .detacerped si {1}={2}"
 line="2| enil #{0}: {1}"
 tempscale="3| eulav elacSpmeT dilavni {0}"
+unknown="4| unknown configuration option {0}"
 
 
 [error]
@@ -127,6 +128,7 @@ findlayout="22| elif tuoyal dnif ot deliaf {0}: {1}"
 logopen="22| elif gol nepo ot deliaf {0}: {1}"
 table="22| woRpoT .0 naht ssel eulav woRpoT tegdiw elbat: {0}"
 nohostname="22| emantsoh teg ton dluoc: {0}"
+unknowndevice="23| unknown device {0}"
 
 [layout.error]
 widget="23| eman tegdiw dilavnI {0}.  fo eno eb tsuM {1}"

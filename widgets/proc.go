@@ -9,9 +9,8 @@ import (
 	"strings"
 	"time"
 
-	tui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3"
 	"github.com/xxxserxxx/gotop/v4/devices"
-	ui "github.com/xxxserxxx/gotop/v4/termui"
 	"github.com/xxxserxxx/gotop/v4/utils"
 )
 
@@ -36,8 +35,8 @@ type Proc struct {
 }
 
 type ProcWidget struct {
-	*ui.Table
-	entry            *ui.Entry
+	*Table
+	entry            *Entry
 	cpuCount         int
 	updateInterval   time.Duration
 	sortMethod       ProcSortMethod
@@ -53,20 +52,20 @@ func NewProcWidget() *ProcWidget {
 		log.Println(tr.Value("error.proc.err.count", err.Error()))
 	}
 	self := &ProcWidget{
-		Table:            ui.NewTable(),
+		Table:            NewTable(),
 		updateInterval:   time.Second,
 		cpuCount:         cpuCount,
 		sortMethod:       ProcSortCPU,
 		showGroupedProcs: true,
 		filter:           "",
 	}
-	self.entry = &ui.Entry{
+	self.entry = &Entry{
 		Style: self.TitleStyle,
 		Label: tr.Value("widget.proc.filter"),
 		Value: "",
 		UpdateCallback: func(val string) {
 			self.filter = val
-			self.update()
+			self.Update()
 		},
 	}
 	self.Title = tr.Value("widget.proc.label")
@@ -85,16 +84,6 @@ func NewProcWidget() *ProcWidget {
 		self.UniqueCol = 1
 	}
 
-	self.update()
-
-	go func() {
-		for range time.NewTicker(self.updateInterval).C {
-			self.Lock()
-			self.update()
-			self.Unlock()
-		}
-	}()
-
 	return self
 }
 
@@ -106,7 +95,7 @@ func (proc *ProcWidget) SetEditingFilter(editing bool) {
 	proc.entry.SetEditing(editing)
 }
 
-func (proc *ProcWidget) HandleEvent(e tui.Event) bool {
+func (proc *ProcWidget) HandleEvent(e termui.Event) bool {
 	return proc.entry.HandleEvent(e)
 }
 
@@ -115,7 +104,7 @@ func (proc *ProcWidget) SetRect(x1, y1, x2, y2 int) {
 	proc.entry.SetRect(x1+2, y2-1, x2-2, y2)
 }
 
-func (proc *ProcWidget) Draw(buf *tui.Buffer) {
+func (proc *ProcWidget) Draw(buf *termui.Buffer) {
 	proc.Table.Draw(buf)
 	proc.entry.Draw(buf)
 }
@@ -133,7 +122,7 @@ func (proc *ProcWidget) filterProcs(procs []Proc) []Proc {
 	return filtered
 }
 
-func (proc *ProcWidget) update() {
+func (proc *ProcWidget) Update() {
 	procs, err := getProcs()
 	if err != nil {
 		log.Printf(tr.Value("widget.proc.error.retrieve", err.Error()))

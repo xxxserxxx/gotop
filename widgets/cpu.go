@@ -4,31 +4,32 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/VictoriaMetrics/metrics"
 	"github.com/VividCortex/ewma"
 	"github.com/xxxserxxx/gotop/v4/devices"
 
 	"github.com/gizak/termui/v3"
-	ui "github.com/xxxserxxx/gotop/v4/termui"
 )
 
+const AVRG = "AVRG"
+
 // TODO Maybe group CPUs in columns if space permits
+// TODO add CPU freq
 type CPUWidget struct {
-	*ui.LineGraph
-	CPUCount        int
+	*LineGraph
+	cpuCount        int
 	ShowAverageLoad bool
 	ShowPerCPULoad  bool
 	updateInterval  time.Duration
 	cpuLoads        map[string]float64
 	average         ewma.MovingAverage
+	cpus            []*devices.CPUs
+	keys            [][]string
 }
-
-var cpuLabels []string
 
 func NewCPUWidget(updateInterval time.Duration, horizontalScale int, showAverageLoad bool, showPerCPULoad bool) *CPUWidget {
 	self := &CPUWidget{
-		LineGraph:       ui.NewLineGraph(),
-		CPUCount:        len(cpuLabels),
+		LineGraph:       NewLineGraph(),
+		cpuCount:        len(cpuLabels),
 		updateInterval:  updateInterval,
 		ShowAverageLoad: showAverageLoad,
 		ShowPerCPULoad:  showPerCPULoad,
@@ -40,7 +41,7 @@ func NewCPUWidget(updateInterval time.Duration, horizontalScale int, showAverage
 	self.HorizontalScale = horizontalScale
 
 	if !(self.ShowAverageLoad || self.ShowPerCPULoad) {
-		if self.CPUCount <= 8 {
+		if self.cpuCount <= 8 {
 			self.ShowPerCPULoad = true
 		} else {
 			self.ShowAverageLoad = true
@@ -51,41 +52,32 @@ func NewCPUWidget(updateInterval time.Duration, horizontalScale int, showAverage
 		self.Data[AVRG] = []float64{0}
 	}
 
-	if self.ShowPerCPULoad {
-		cpus := make(map[string]int)
-		devices.UpdateCPU(cpus, self.updateInterval, self.ShowPerCPULoad)
-		for k, v := range cpus {
-			self.Data[k] = []float64{float64(v)}
-		}
-	}
-
-	self.update()
-
-	go func() {
-		for range time.NewTicker(self.updateInterval).C {
-			self.update()
-		}
-	}()
-
 	return self
 }
 
-const AVRG = "AVRG"
+var cpuLabels []string
 
-func (cpu *CPUWidget) EnableMetric() {
-	if cpu.ShowAverageLoad {
-		metrics.NewGauge(makeName("cpu", " avg"), func() float64 {
-			return cpu.cpuLoads[AVRG]
-		})
-	} else {
-		cpus := make(map[string]int)
-		devices.UpdateCPU(cpus, cpu.updateInterval, cpu.ShowPerCPULoad)
-		for key, perc := range cpus {
-			kc := key
-			cpu.cpuLoads[key] = float64(perc)
-			metrics.NewGauge(makeName("cpu", key), func() float64 {
-				return cpu.cpuLoads[kc]
-			})
+func (cpu *CPUWidget) Attach(cs *devices.CPUs) {
+	cpu.cpus = append(cpu.cpus, cs)
+
+	cpu.cpuCount = 0
+	cpu.keys = make([][]string, len(cpu.cpus))
+	if cpu.ShowPerCPULoad {
+		cpu.Data = make(map[string][]float64)
+		for _, c := range cpu.cpus {
+			cpu.cpuCount += len(c.Data)
+		}
+		formatString := "%s%1d"
+		if cpu.cpuCount > 10 {
+			formatString = "%s%02d"
+		}
+		for i, ci := range cpu.cpus {
+			cpu.keys[i] = make([]string, len(ci.Data))
+			for j, _ := range ci.Data {
+				key := fmt.Sprintf(formatString, ci.Name, j)
+				cpu.Data[key] = make([]float64, 0)
+				cpu.keys[i][j] = key
+			}
 		}
 	}
 }
@@ -94,28 +86,30 @@ func (cpu *CPUWidget) Scale(i int) {
 	cpu.LineGraph.HorizontalScale = i
 }
 
-func (cpu *CPUWidget) update() {
-	go func() {
-		cpus := make(map[string]int)
-		devices.UpdateCPU(cpus, cpu.updateInterval, true)
-		cpu.Lock()
-		defer cpu.Unlock()
-		// AVG = ((AVG*i)+n)/(i+1)
-		var sum int
-		for key, percent := range cpus {
-			sum += percent
-			if cpu.ShowPerCPULoad {
+func (cpu *CPUWidget) Update() {
+	cpus := make(map[string]int)
+	// AVG = ((AVG*i)+n)/(i+1)
+	var sum float64
+	if cpu.ShowPerCPULoad {
+		for i, c := range cpu.cpus {
+			sum += c.Average
+			for j, percent := range c.Data {
+				key := cpu.keys[i][j]
 				cpu.Data[key] = append(cpu.Data[key], float64(percent))
-				cpu.Labels[key] = fmt.Sprintf("%3d%%", percent)
+				cpu.Labels[key] = fmt.Sprintf("%3d%%", int(percent))
 				cpu.cpuLoads[key] = float64(percent)
 			}
 		}
-		if cpu.ShowAverageLoad {
-			cpu.average.Add(float64(sum) / float64(len(cpus)))
-			avg := cpu.average.Value()
-			cpu.Data[AVRG] = append(cpu.Data[AVRG], avg)
-			cpu.Labels[AVRG] = fmt.Sprintf("%3.0f%%", avg)
-			cpu.cpuLoads[AVRG] = avg
+	} else {
+		for _, c := range cpu.cpus {
+			sum += c.Average
 		}
-	}()
+	}
+	if cpu.ShowAverageLoad {
+		cpu.average.Add(sum / float64(len(cpus)))
+		avg := cpu.average.Value()
+		cpu.Data[AVRG] = append(cpu.Data[AVRG], avg)
+		cpu.Labels[AVRG] = fmt.Sprintf("%3.0f%%", avg)
+		cpu.cpuLoads[AVRG] = avg
+	}
 }

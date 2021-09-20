@@ -29,25 +29,59 @@ gotop.myserver.net {
 Caddy would then be responsible for authentication and encrypting the traffic.  Then, on the same machine run gotop in a persistent terminal session such as [tmux](https://github.com/tmux/tmux) with the following command:
 
 ```
-gotop -x :8089
+gotop -x :8089 --headless
 ```
 
-On a local machine, create a config file named `myserver.conf` with the following lines:
+On a local machine, run:
 
 ```
-remote-myserver-url=https://gotopusername:supersecretpassword@gotop.myserver.net/metrics
-remote-myserver-refresh=2
+gotop --remote-name MyServ --remote-url http://gotopusername:supersecretpassword@gotop.myserver.net/metrics
 ```
 
-Note the `/metrics` at the end -- don't omit that, and don't strip it in Caddy.  The refresh value is in seconds. Run gotop with:
+Note the `/metrics` at the end -- don't omit that, and don't strip it in Caddy; you should see your remote server sensors as if it were running on your local machine.
+
+## Multiple servers
+
+You need to use a config file for this. Create one with:
 
 ```
-gotop -C myserver.conf
+$ cat > gotop-remotes.conf <<EOF
+remote-servone-url=https://gotopusername:supersecretpassword@gotop.servone.net/metrics
+remote-servone-refresh=2
+remote-servtwo-url=https://gotopusername:supersecretpassword@gotop.servtwo.net/metrics
+remote-servtwo-refresh=2
+EOF
 ```
 
-and you should see your remote server sensors as if it were running on your local machine.
+The refresh value is in seconds. You can then launch gotop on the client with:
 
-You can add as many remote servers as you like in the config file; just follow the naming pattern.
+```
+gotop -C gotop-remotes.conf
+```
+
+You can add as many remote servers as you like in the config file; just follow the naming pattern of the keys:
+
+```
+remote-SERVERNAME-url
+remote-SERVERNAME-refresh
+```
+
+`SERVERNAME` can be anything; however, sensor names include this, so shorter values are better.
+
+## Enhancing
+
+A partner option is `--headless`, which turns off the TUI. This allows forking gotop on the server, and uses fewer resources.
+
+Another useful option is `--no-local`. This disables local sensors, allowing a gotop to *only* monitor remote servers.
+## Widgets (layout)
+
+This feature does not (yet) export all sensors. NVidia, procs, and battery levels are not reported. If you're using `--no-local` to disable local sensors, a useful layout for remote-only sensors is:
+
+```
+cpu/2 mem/1
+temp/1 disk/2
+net
+```
 
 ## Why
 

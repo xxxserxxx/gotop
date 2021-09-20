@@ -1,11 +1,11 @@
-package termui
+package widgets
 
 import (
 	"image"
 	"strings"
 	"unicode/utf8"
 
-	. "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3"
 	rw "github.com/mattn/go-runewidth"
 	"github.com/xxxserxxx/gotop/v4/utils"
 )
@@ -16,9 +16,9 @@ const (
 )
 
 type Entry struct {
-	Block
+	termui.Block
 
-	Style Style
+	Style termui.Style
 
 	Label          string
 	Value          string
@@ -40,7 +40,7 @@ func (self *Entry) update() {
 
 // HandleEvent handles input events if the entry is being edited.
 // Returns true if the event was handled.
-func (self *Entry) HandleEvent(e Event) bool {
+func (self *Entry) HandleEvent(e termui.Event) bool {
 	if !self.editing {
 		return false
 	}
@@ -71,7 +71,7 @@ func (self *Entry) HandleEvent(e Event) bool {
 	return true
 }
 
-func (self *Entry) Draw(buf *Buffer) {
+func (self *Entry) Draw(buf *termui.Buffer) {
 	if self.Value == "" && !self.editing && !self.ShowWhenEmpty {
 		return
 	}
@@ -80,9 +80,9 @@ func (self *Entry) Draw(buf *Buffer) {
 	label := self.Label
 	if self.editing {
 		label += "["
-		style = NewStyle(style.Fg, style.Bg, ModifierBold)
+		style = termui.NewStyle(style.Fg, style.Bg, termui.ModifierBold)
 	}
-	cursorStyle := NewStyle(style.Bg, style.Fg, ModifierClear)
+	cursorStyle := termui.NewStyle(style.Bg, style.Fg, termui.ModifierClear)
 
 	p := image.Pt(self.Min.X, self.Min.Y)
 	buf.SetString(label, style, p)

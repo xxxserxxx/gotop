@@ -1,9 +1,9 @@
+//go:build linux
 // +build linux
 
 package devices
 
-// TODO gopsutil is at v3, and we're using v2. See if v3 is released and upgrade if so.
-import "github.com/shirou/gopsutil/cpu"
+import "github.com/shirou/gopsutil/v3/cpu"
 
 func CpuCount() (int, error) {
 	cpuCount, err := cpu.Counts(false)

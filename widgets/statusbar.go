@@ -6,20 +6,20 @@ import (
 	"os"
 	"time"
 
-	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3"
 )
 
 type StatusBar struct {
-	ui.Block
+	termui.Block
 }
 
 func NewStatusBar() *StatusBar {
-	self := &StatusBar{*ui.NewBlock()}
+	self := &StatusBar{*termui.NewBlock()}
 	self.Border = false
 	return self
 }
 
-func (sb *StatusBar) Draw(buf *ui.Buffer) {
+func (sb *StatusBar) Draw(buf *termui.Buffer) {
 	sb.Block.Draw(buf)
 
 	hostname, err := os.Hostname()
@@ -29,7 +29,7 @@ func (sb *StatusBar) Draw(buf *ui.Buffer) {
 	}
 	buf.SetString(
 		hostname,
-		ui.Theme.Default,
+		termui.Theme.Default,
 		image.Pt(sb.Inner.Min.X, sb.Inner.Min.Y+(sb.Inner.Dy()/2)),
 	)
 
@@ -37,7 +37,7 @@ func (sb *StatusBar) Draw(buf *ui.Buffer) {
 	formattedTime := currentTime.Format("15:04:05")
 	buf.SetString(
 		formattedTime,
-		ui.Theme.Default,
+		termui.Theme.Default,
 		image.Pt(
 			sb.Inner.Min.X+(sb.Inner.Dx()/2)-len(formattedTime)/2,
 			sb.Inner.Min.Y+(sb.Inner.Dy()/2),
@@ -48,7 +48,7 @@ func (sb *StatusBar) Draw(buf *ui.Buffer) {
 	// i.Uptime // Number of seconds since boot
 	buf.SetString(
 		"gotop",
-		ui.Theme.Default,
+		termui.Theme.Default,
 		image.Pt(
 			sb.Inner.Max.X-6,
 			sb.Inner.Min.Y+(sb.Inner.Dy()/2),
