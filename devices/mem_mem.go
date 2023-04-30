@@ -10,10 +10,17 @@ func init() {
 		if err != nil {
 			return map[string]error{"Main": err}
 		}
+		pressure, err := psMem.Pressure()
+		if err != nil {
+			return map[string]error{"Pressure": err}
+		}
 		mems["Main"] = MemoryInfo{
 			Total:       mainMemory.Total,
 			Used:        mainMemory.Used,
 			UsedPercent: mainMemory.UsedPercent,
+		}
+		mems["Pressure"] = MemoryInfo{
+			Pressure: pressure.SomeAvg10,
 		}
 		return nil
 	}

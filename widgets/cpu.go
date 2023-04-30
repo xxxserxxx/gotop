@@ -21,6 +21,7 @@ type CPUWidget struct {
 	updateInterval  time.Duration
 	cpuLoads        map[string]float64
 	average         ewma.MovingAverage
+	pressure        float64
 }
 
 var cpuLabels []string
@@ -38,6 +39,8 @@ func NewCPUWidget(updateInterval time.Duration, horizontalScale int, showAverage
 	self.LabelStyles[AVRG] = termui.ModifierBold
 	self.Title = tr.Value("widget.label.cpu")
 	self.HorizontalScale = horizontalScale
+	cpuPressure, _ := cpu.Pressure()
+	self.pressure = cpuPressure.SomeAvg10
 
 	if !(self.ShowAverageLoad || self.ShowPerCPULoad) {
 		if self.CPUCount <= 8 {
@@ -114,7 +117,7 @@ func (cpu *CPUWidget) update() {
 			cpu.average.Add(float64(sum) / float64(len(cpus)))
 			avg := cpu.average.Value()
 			cpu.Data[AVRG] = append(cpu.Data[AVRG], avg)
-			cpu.Labels[AVRG] = fmt.Sprintf("%3.0f%%", avg)
+			cpu.Labels[AVRG] = fmt.Sprintf("%3.0f%% %3.0f%%", avg, cpu.pressure)
 			cpu.cpuLoads[AVRG] = avg
 		}
 	}()

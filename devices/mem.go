@@ -10,6 +10,7 @@ type MemoryInfo struct {
 	Total       uint64
 	Used        uint64
 	UsedPercent float64
+	Pressure    float64
 }
 
 func RegisterMem(f func(map[string]MemoryInfo) map[string]error) {

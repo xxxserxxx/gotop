@@ -70,8 +70,9 @@ func (mem *MemWidget) renderMemInfo(line string, memoryInfo devices.MemoryInfo) 
 	mem.Data[line] = append(mem.Data[line], memoryInfo.UsedPercent)
 	memoryTotalBytes, memoryTotalMagnitude := utils.ConvertBytes(memoryInfo.Total)
 	memoryUsedBytes, memoryUsedMagnitude := utils.ConvertBytes(memoryInfo.Used)
-	mem.Labels[line] = fmt.Sprintf("%3.0f%% %5.1f%s/%.0f%s",
+	mem.Labels[line] = fmt.Sprintf("%3.0f%% %3.0f%% %5.1f%s/%.0f%s",
 		memoryInfo.UsedPercent,
+		memoryInfo.Pressure,
 		memoryUsedBytes,
 		memoryUsedMagnitude,
 		memoryTotalBytes,
