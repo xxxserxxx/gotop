@@ -6,6 +6,7 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/VividCortex/ewma"
+	gopsutilCPU "github.com/shirou/gopsutil/v3/cpu"
 	"github.com/xxxserxxx/gotop/v4/devices"
 
 	"github.com/gizak/termui/v3"
@@ -39,7 +40,7 @@ func NewCPUWidget(updateInterval time.Duration, horizontalScale int, showAverage
 	self.LabelStyles[AVRG] = termui.ModifierBold
 	self.Title = tr.Value("widget.label.cpu")
 	self.HorizontalScale = horizontalScale
-	cpuPressure, _ := cpu.Pressure()
+	cpuPressure, _ := gopsutilCPU.Pressure()
 	self.pressure = cpuPressure.SomeAvg10
 
 	if !(self.ShowAverageLoad || self.ShowPerCPULoad) {
@@ -116,8 +117,9 @@ func (cpu *CPUWidget) update() {
 		if cpu.ShowAverageLoad {
 			cpu.average.Add(float64(sum) / float64(len(cpus)))
 			avg := cpu.average.Value()
+			pressure, _ := gopsutilCPU.Pressure()
 			cpu.Data[AVRG] = append(cpu.Data[AVRG], avg)
-			cpu.Labels[AVRG] = fmt.Sprintf("%3.0f%% %3.0f%%", avg, cpu.pressure)
+			cpu.Labels[AVRG] = fmt.Sprintf("%3.0f%% %3.0f%%", avg, pressure.SomeAvg10)
 			cpu.cpuLoads[AVRG] = avg
 		}
 	}()
