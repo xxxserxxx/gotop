@@ -18,9 +18,7 @@ func init() {
 			Total:       mainMemory.Total,
 			Used:        mainMemory.Used,
 			UsedPercent: mainMemory.UsedPercent,
-		}
-		mems["Pressure"] = MemoryInfo{
-			Pressure: pressure.SomeAvg10,
+			Pressure:    pressure.SomeAvg10,
 		}
 		return nil
 	}
