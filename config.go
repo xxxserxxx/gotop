@@ -205,7 +205,7 @@ func load(in io.Reader, conf *Config) error {
 // Write serializes the configuration to a file.
 // The configuration written is based on the loaded configuration, plus any
 // command-line changes, so it can be used to update an existing configuration
-// file.  The file will be written to the specificed `--config` argument file,
+// file.  The file will be written to the specified `--config` argument file,
 // if one is set; otherwise, it'll create one in the user's config directory.
 func (conf *Config) Write() (string, error) {
 	var dir *configdir.Config
@@ -257,7 +257,7 @@ func marshal(c *Config) []byte {
 	fmt.Fprintf(buff, "%s=%s\n", layout, c.Layout)
 	fmt.Fprintln(buff, "# The maximum log file size, in bytes")
 	fmt.Fprintf(buff, "%s=%d\n", maxlogsize, c.MaxLogSize)
-	fmt.Fprintln(buff, "# If set, export data as Promethius metrics on the interface:port.\n# E.g., `:8080` (colon is required, interface is not)")
+	fmt.Fprintln(buff, "# If set, export data as Prometheus metrics on the interface:port.\n# E.g., `:8080` (colon is required, interface is not)")
 	if c.ExportPort == "" {
 		fmt.Fprint(buff, "#")
 	}
