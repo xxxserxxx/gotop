@@ -1,0 +1,133 @@
+# github.com/BurntSushi/toml v1.1.0
+## explicit; go 1.16
+github.com/BurntSushi/toml
+github.com/BurntSushi/toml/internal
+# github.com/StackExchange/wmi v1.2.1
+## explicit; go 1.13
+github.com/StackExchange/wmi
+# github.com/VictoriaMetrics/metrics v1.18.1
+## explicit; go 1.12
+github.com/VictoriaMetrics/metrics
+# github.com/VividCortex/ewma v1.2.0
+## explicit; go 1.12
+github.com/VividCortex/ewma
+# github.com/anatol/smart.go v0.0.0-20220929205047-336d113af2c1
+## explicit; go 1.17
+github.com/anatol/smart.go
+# github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
+## explicit
+github.com/cloudfoundry-attic/jibber_jabber
+# github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
+## explicit
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
+# github.com/distatus/battery v0.10.0
+## explicit; go 1.13
+github.com/distatus/battery
+# github.com/droundy/goopt v0.0.0-20220217183150-48d6390ad4d1
+## explicit
+github.com/droundy/goopt
+# github.com/ghodss/yaml v1.0.0
+## explicit
+github.com/ghodss/yaml
+# github.com/gizak/termui/v3 v3.1.0
+## explicit
+github.com/gizak/termui/v3
+github.com/gizak/termui/v3/drawille
+github.com/gizak/termui/v3/widgets
+# github.com/go-ole/go-ole v1.2.6
+## explicit; go 1.12
+github.com/go-ole/go-ole
+github.com/go-ole/go-ole/oleutil
+# github.com/jaypipes/ghw v0.9.0
+## explicit; go 1.15
+github.com/jaypipes/ghw
+github.com/jaypipes/ghw/pkg/baseboard
+github.com/jaypipes/ghw/pkg/bios
+github.com/jaypipes/ghw/pkg/block
+github.com/jaypipes/ghw/pkg/chassis
+github.com/jaypipes/ghw/pkg/context
+github.com/jaypipes/ghw/pkg/cpu
+github.com/jaypipes/ghw/pkg/gpu
+github.com/jaypipes/ghw/pkg/linuxdmi
+github.com/jaypipes/ghw/pkg/linuxpath
+github.com/jaypipes/ghw/pkg/marshal
+github.com/jaypipes/ghw/pkg/memory
+github.com/jaypipes/ghw/pkg/net
+github.com/jaypipes/ghw/pkg/option
+github.com/jaypipes/ghw/pkg/pci
+github.com/jaypipes/ghw/pkg/pci/address
+github.com/jaypipes/ghw/pkg/product
+github.com/jaypipes/ghw/pkg/snapshot
+github.com/jaypipes/ghw/pkg/topology
+github.com/jaypipes/ghw/pkg/unitutil
+github.com/jaypipes/ghw/pkg/util
+# github.com/jaypipes/pcidb v1.0.0
+## explicit; go 1.17
+github.com/jaypipes/pcidb
+# github.com/mattn/go-runewidth v0.0.13
+## explicit; go 1.9
+github.com/mattn/go-runewidth
+# github.com/mitchellh/go-homedir v1.1.0
+## explicit
+github.com/mitchellh/go-homedir
+# github.com/mitchellh/go-wordwrap v1.0.1
+## explicit; go 1.14
+github.com/mitchellh/go-wordwrap
+# github.com/nsf/termbox-go v0.0.0-20200418040025-38ba6e5628f1
+## explicit
+github.com/nsf/termbox-go
+# github.com/onsi/ginkgo v1.14.2
+## explicit; go 1.13
+# github.com/onsi/gomega v1.10.4
+## explicit; go 1.14
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
+# github.com/rivo/uniseg v0.2.0
+## explicit; go 1.12
+github.com/rivo/uniseg
+# github.com/shibukawa/configdir v0.0.0-20170330084843-e180dbdc8da0
+## explicit
+github.com/shibukawa/configdir
+# github.com/shirou/gopsutil v3.20.12+incompatible
+## explicit
+github.com/shirou/gopsutil/cpu
+github.com/shirou/gopsutil/disk
+github.com/shirou/gopsutil/host
+github.com/shirou/gopsutil/internal/common
+github.com/shirou/gopsutil/mem
+github.com/shirou/gopsutil/net
+github.com/shirou/gopsutil/process
+# github.com/stretchr/testify v1.8.0
+## explicit; go 1.13
+github.com/stretchr/testify/assert
+# github.com/valyala/fastrand v1.1.0
+## explicit
+github.com/valyala/fastrand
+# github.com/valyala/histogram v1.2.0
+## explicit; go 1.12
+github.com/valyala/histogram
+# github.com/xxxserxxx/lingo/v2 v2.0.1
+## explicit; go 1.16
+github.com/xxxserxxx/lingo/v2
+# golang.org/x/sys v0.0.0-20220915200043-7b5979e65e41
+## explicit; go 1.17
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
+## explicit; go 1.11
+# gopkg.in/yaml.v2 v2.4.0
+## explicit; go 1.15
+gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3
+# howett.net/plist v1.0.0
+## explicit; go 1.12
+howett.net/plist
