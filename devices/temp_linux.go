@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package devices
@@ -6,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/host"
 )
 
 // All possible thermometers

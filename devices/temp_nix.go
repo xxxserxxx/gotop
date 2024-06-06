@@ -8,7 +8,7 @@ import (
 
 	"github.com/anatol/smart.go"
 	"github.com/jaypipes/ghw"
-	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/host"
 )
 
 var smDevices map[string]smart.Device
