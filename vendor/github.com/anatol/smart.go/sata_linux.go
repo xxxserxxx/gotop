@@ -154,3 +154,39 @@ func (d *SataDevice) ReadSMARTSelfTestLog() (*AtaSmartSelfTestLog, error) {
 
 	return &log, nil
 }
+
+func (d *SataDevice) readSMARTThresholds() (*AtaSmartThresholdsPageRaw, error) {
+	cdb := cdb16{_SCSI_ATA_PASSTHRU_16}
+	cdb[1] = 0x08                   // ATA protocol (4 << 1, PIO data-in)
+	cdb[2] = 0x0e                   // BYT_BLOK = 1, T_LENGTH = 2, T_DIR = 1
+	cdb[4] = _SMART_READ_THRESHOLDS // feature LSB
+	cdb[8] = 0x1                    // low lba_low
+	cdb[10] = 0x4f                  // low lba_mid
+	cdb[12] = 0xc2                  // low lba_high
+	cdb[14] = _ATA_SMART            // command
+
+	respBuf := make([]byte, 512)
+
+	if err := scsiSendCdb(d.fd, cdb[:], respBuf); err != nil {
+		return nil, fmt.Errorf("scsiSendCdb SMART READ THRESHOLD: %v", err)
+	}
+
+	if !checksum(respBuf) {
+		return nil, fmt.Errorf("invalid checksum for SMART THRESHOLD data")
+	}
+
+	page := AtaSmartThresholdsPageRaw{}
+	if err := binary.Read(bytes.NewBuffer(respBuf[:]), binary.LittleEndian, &page); err != nil {
+		return nil, err
+	}
+
+	return &page, nil
+}
+
+func checksum(data []byte) bool {
+	var sum byte
+	for _, b := range data {
+		sum += b
+	}
+	return sum == 0
+}

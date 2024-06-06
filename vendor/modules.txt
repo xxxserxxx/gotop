@@ -11,7 +11,7 @@ github.com/VictoriaMetrics/metrics
 # github.com/VividCortex/ewma v1.2.0
 ## explicit; go 1.12
 github.com/VividCortex/ewma
-# github.com/anatol/smart.go v0.0.0-20220929205047-336d113af2c1
+# github.com/anatol/smart.go v0.0.0-20240606135530-b987830bbb40
 ## explicit; go 1.17
 github.com/anatol/smart.go
 # github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21

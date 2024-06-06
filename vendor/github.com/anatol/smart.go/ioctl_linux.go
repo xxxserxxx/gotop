@@ -1,6 +1,8 @@
 package smart
 
-import "golang.org/x/sys/unix"
+import (
+	"golang.org/x/sys/unix"
+)
 
 const (
 	directionNone  = 0

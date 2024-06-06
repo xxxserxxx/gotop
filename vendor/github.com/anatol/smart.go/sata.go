@@ -19,9 +19,10 @@ const (
 	_ATA_IDENTIFY_DEVICE = 0xec
 
 	// ATA feature register values for SMART
-	_SMART_READ_DATA     = 0xd0
-	_SMART_READ_LOG      = 0xd5
-	_SMART_RETURN_STATUS = 0xda
+	_SMART_READ_DATA       = 0xd0
+	_SMART_READ_THRESHOLDS = 0xd1
+	_SMART_READ_LOG        = 0xd5
+	_SMART_RETURN_STATUS   = 0xda
 )
 
 // AtaIdentifyDevice ATA IDENTIFY DEVICE struct. ATA8-ACS defines this as a page of 16-bit words.
@@ -29,14 +30,38 @@ const (
 // single word, and are bitmasked together with other fields. Since many of the fields are now
 // retired / obsolete, we only define the fields that are currently used by this package.
 type AtaIdentifyDevice struct {
-	GeneralConfig       uint16     // Word 0, general configuration. If bit 15 is zero, device is ATA.
-	_                   [9]uint16  // ...
-	SerialNumberRaw     [20]byte   // Word 10..19, device serial number, padded with spaces (20h).
-	_                   [3]uint16  // ...
-	FirmwareRevisionRaw [8]byte    // Word 23..26, device firmware revision, padded with spaces (20h).
-	ModelNumberRaw      [40]byte   // Word 27..46, device model number, padded with spaces (20h).
-	_                   [28]uint16 // ...
-	QueueDepth          uint16     // Word 75, Maximum queue depth – 1
+	GeneralConfig       uint16    // Word 0, general configuration. If bit 15 is zero, device is ATA.
+	_                   [9]uint16 // ...
+	SerialNumberRaw     [20]byte  // Word 10..19, device serial number, padded with spaces (20h).
+	_                   [3]uint16 // ...
+	FirmwareRevisionRaw [8]byte   // Word 23..26, device firmware revision, padded with spaces (20h).
+	ModelNumberRaw      [40]byte  // Word 27..46, device model number, padded with spaces (20h).
+	_                   [2]uint16 // ...
+	// Capabilities (see 7.12.7.17)
+	// Word 49
+	// 15:14 Reserved for the IDENTIFY PACKET DEVICE command.
+	// 13: 1 = Standby timer values as specified in this standard are supported.
+	//     0 = Standby timer values shall be vendor specific.
+	// 12 Reserved for the IDENTIFY PACKET DEVICE command.
+	// 11: 1 = IORDY (see ATA8-APT) supported
+	//     0 = IORDY (see ATA8-APT) may be supported
+	// 10 IORDY (see ATA8-APT) may be disabled
+	// 9 Shall be set to one (i.e., LBA is supported).
+	// 8 DMA supported
+	// 7:2 Reserved
+	// 1:0 Long Physical Sector Alignment Error reporting
+	// Word 50 Capabilities (see 7.12.7.17)
+	// 15 Shall be cleared to zero
+	// 14 Shall be set to one
+	// 13:2 Reserved
+	// 1 Obsolete
+	// 0: 1 = There is a minimum Standby time value and it is vendor specific.
+	//    0 = There is no minimum Standby timer value.
+	Capabilities  [2]uint16 // Word 49..50
+	_             [9]uint16
+	CapacityLba28 uint32 // Word 60..61
+	_             [13]uint16
+	QueueDepth    uint16 // Word 75, Maximum queue depth – 1
 	// Serial ATA Capabilities (see 7.12.6.34)
 	// bit 15 Supports READ LOG DMA EXT as equivalent to READ LOG EXT
 	// bit 14 Supports Device Automatic Partial to Slumber transitions
@@ -239,15 +264,17 @@ type AtaIdentifyDevice struct {
 	//    10 = the CSEL signal was used.
 	//    11 = some other method was used or the method is unknown.
 	// bit 0 Shall be set to one for PATA devices
-	ResetResults uint16     // Word 93, Hardware reset results (see 7.12.6.47)
-	_            [12]uint16 // ...
+	ResetResults  uint16    // Word 93, Hardware reset results (see 7.12.6.47)
+	_             [6]uint16 // ...
+	CapacityLba48 uint64    // Word 100..103
+	_             [2]uint16 // ...
 	// Physical sector size / logical sector size (see 7.12.6.56)
 	// bit 15 Shall be cleared to zero
 	// bit 14 Shall be set to one
 	// bit 13 Device has multiple logical sectors per physical sector.
 	// bit 12 Device Logical Sector longer than 256 words
 	// bit 11:4 Reserved
-	// bit 3:0 2X logical sectors per physical sector
+	// bit 3:0 2^X logical sectors per physical sector
 	LogicalPerPhisicalSectors uint16 // Word 106, Physical sector size / logical sector size (see 7.12.6.56)
 	InterSeekDelay            uint16 // Word 107, Inter-seek delay for ISO/IEC 7779 standard acoustic testing (see 7.12.6.57)
 	// In the IDENTIFY DEVICE data (see 7.12.7) and the IDENTIFY PACKET DEVICE data (see 7.13.6):
@@ -255,7 +282,9 @@ type AtaIdentifyDevice struct {
 	// bits 11:0 and word 109 bits 15:4 shall contain the IEEE OUI field (see A.11.5.8.2); and
 	// bits 3:0, word 110, and word 111 shall contain the UNIQUE ID field (see A.11.5.8.2).
 	WWNRaw [4]uint16 // Word 108..111, WWN (World Wide Name).
-	_      [7]uint16
+	_      [5]uint16
+	// Logical sector size
+	LogicalSectorSize [2]uint16 // Word 117..118
 	// Commands and feature sets supported (Continued from words 82..84) (see 7.12.6.40)
 	// bit 15 Shall be cleared to zero
 	// bit 14 Shall be set to one
@@ -286,11 +315,17 @@ type AtaIdentifyDevice struct {
 	// bit 1 The Write-Read-Verify feature set is enabled.
 	// bit 0 Obsolete
 	CommandsEnabled4 uint16     //  Commands and feature sets supported or enabled (Continued from words 85..87) (see 7.12.6.41)
-	_                [96]uint16 // ...
-	RotationRate     uint16     // Word 217, nominal media rotation rate.
-	_                [4]uint16  // ...
-	TransportMajor   uint16     // Word 222, transport major version number.
-	_                [33]uint16 // ...
+	_                [88]uint16 // ...
+	// Alignment of logical sectors within a physical sector (see 7.12.7.75)
+	// bit 15 Shall be cleared to zero
+	// bit 14 Shall be set to one
+	// bits 13:0 Logical sector offset within the first physical sector where the first logical sector is placed
+	LogicalSectorOffset uint16 // Word 209
+	_                   [7]uint16
+	RotationRate        uint16     // Word 217, nominal media rotation rate.
+	_                   [4]uint16  // ...
+	TransportMajor      uint16     // Word 222, transport major version number.
+	_                   [33]uint16 // ...
 } // 512 bytes
 
 func (a *AtaIdentifyDevice) IsGeneralPurposeLoggingCapable() bool {
@@ -339,6 +374,54 @@ func fromAtaString(in []byte) string {
 
 	swapped = bytes.TrimSpace(swapped)
 	return string(swapped)
+}
+
+// Capacity returns size of the device sectors and capacity of the device itself
+func (i *AtaIdentifyDevice) Capacity() (sectors, capacity, logicalSectorSize, physicalSectorSize, logicalSectorOffset uint64) {
+	var lba28, lba48 uint64
+
+	if i.Capabilities[0]&0x0200 == 0 {
+		// LBA is not supported
+		return
+	}
+
+	lba28 = uint64(i.CapacityLba28)
+
+	if i.CommandsSupported2&0x400 != 0 {
+		// The 48-bit Address feature set is supported
+		lba48 = i.CapacityLba48
+	}
+
+	if lba28 == 0 && lba48 == 0 {
+		// capacity unknown (ATAPI CD/DVD)
+		return
+	}
+
+	logicalSectorSize = 512
+	physicalSectorSize = 512
+
+	// Long Logical/Physical Sectors (LLS/LPS) ?
+	if i.LogicalPerPhisicalSectors&0x1000 != 0 {
+		// Logical sector size is specified in 16-bit words
+		logicalSectorSize = (uint64(i.LogicalSectorSize[1])<<16 | uint64(i.LogicalSectorSize[0])) << 1
+		physicalSectorSize = logicalSectorSize
+	}
+	if i.LogicalPerPhisicalSectors&0x2000 != 0 {
+		// Physical sector size is multiple of logical sector size
+		physicalSectorSize <<= i.LogicalPerPhisicalSectors & 0x0f
+	}
+	logicalSectorOffset = uint64(i.LogicalSectorOffset&0x3fff) * logicalSectorSize
+
+	// Some early 4KiB LLS disks (Samsung N3U-3) return bogus lba28 value
+	if lba48 >= lba28 || (lba48 != 0 && logicalSectorSize > 512) {
+		sectors = lba48
+	} else {
+		sectors = lba28
+	}
+
+	capacity = sectors * logicalSectorSize
+
+	return
 }
 
 //go:generate go run generator/ata_attributes.go
@@ -452,6 +535,21 @@ type SataDevice struct {
 	firmwareBug      int
 }
 
+// AtaSmartThresholdEntry individual SMART attribute threshold (12 bytes)
+type AtaSmartThresholdEntry struct {
+	Id        uint8    // SMART attribute ID
+	Threshold uint8    // Threshold value
+	_         [10]byte // Reserved
+}
+
+// AtaSmartThresholdsPageRaw is page of 30 SMART attributes thresholds as per ATA spec
+type AtaSmartThresholdsPageRaw struct {
+	Revnumber        uint16
+	ThresholdEntries [30]AtaSmartThresholdEntry
+	_                [149]byte // Reserved
+	Chksum           byte      // Two's complement checksum of first 511 bytes
+}
+
 func (d *SataDevice) Type() string {
 	return "sata"
 }
@@ -539,6 +637,13 @@ func findMatchingDbRecord(model, firmware string) (*ataDeviceInfo, error) {
 
 	return nil, nil
 }
+
+const (
+	// Prefailure bit. If the flag is 0 it corresponds to "Old_age" value, "Pre-fail" otherwise.
+	AtaAttributeFlagPrefailure = 1 << 0
+	// Online bit. If the flag is 0 it corresponds to "Offline" value, "Always" otherwise.
+	AtaAttributeFlagOnline = 1 << 1
+)
 
 type AtaSmartAttr struct {
 	Id          uint8
@@ -744,4 +849,30 @@ func computeAttributeRawValue(mapping ataDeviceAttr, vendorBytes [6]byte, reserv
 		rawValue |= uint64(b)
 	}
 	return rawValue
+}
+
+type AtaSmartThresholdsPage struct {
+	Revnumber  uint16
+	Thresholds map[uint8]uint8
+}
+
+func (d *SataDevice) ReadSMARTThresholds() (*AtaSmartThresholdsPage, error) {
+	pageRaw, err := d.readSMARTThresholds()
+	if err != nil {
+		return nil, err
+	}
+
+	page := AtaSmartThresholdsPage{}
+	page.Revnumber = pageRaw.Revnumber
+	page.Thresholds = make(map[uint8]uint8)
+
+	for _, a := range pageRaw.ThresholdEntries {
+		if a.Id == 0 {
+			break
+		}
+
+		page.Thresholds[a.Id] = a.Threshold
+	}
+
+	return &page, nil
 }

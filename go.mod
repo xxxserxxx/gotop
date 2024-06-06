@@ -3,7 +3,7 @@ module github.com/xxxserxxx/gotop/v4
 require (
 	github.com/VictoriaMetrics/metrics v1.18.1
 	github.com/VividCortex/ewma v1.2.0
-	github.com/anatol/smart.go v0.0.0-20220929205047-336d113af2c1
+	github.com/anatol/smart.go v0.0.0-20240606135530-b987830bbb40
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/distatus/battery v0.10.0
 	github.com/droundy/goopt v0.0.0-20220217183150-48d6390ad4d1
