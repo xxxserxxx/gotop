@@ -1,3 +1,4 @@
+//go:build darwin
 // +build darwin
 
 package devices
@@ -6,9 +7,10 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/csv"
-	"github.com/shirou/gopsutil/host"
 	"io"
 	"log"
+
+	"github.com/shirou/gopsutil/v3/host"
 )
 
 // All possible thermometers

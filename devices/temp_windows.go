@@ -1,9 +1,10 @@
+//go:build windows
 // +build windows
 
 package devices
 
 import (
-	psHost "github.com/shirou/gopsutil/host"
+	psHost "github.com/shirou/gopsutil/v3/host"
 )
 
 func init() {

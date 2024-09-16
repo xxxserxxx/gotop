@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
-	psDisk "github.com/shirou/gopsutil/disk"
+	psDisk "github.com/shirou/gopsutil/v3/disk"
 
 	ui "github.com/xxxserxxx/gotop/v4/termui"
 	"github.com/xxxserxxx/gotop/v4/utils"

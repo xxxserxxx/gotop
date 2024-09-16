@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
-	psNet "github.com/shirou/gopsutil/net"
+	psNet "github.com/shirou/gopsutil/v3/net"
 
 	ui "github.com/xxxserxxx/gotop/v4/termui"
 	"github.com/xxxserxxx/gotop/v4/utils"

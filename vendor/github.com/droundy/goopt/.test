@@ -1,0 +1,79 @@
+#!/bin/sh
+
+set -ev
+
+trap 'echo; echo "ERROR at line $LINENO" >&2' ERR
+
+cd example
+go build
+ln -nfs example goopt-example
+
+# Verify that the web page seems to be there:
+grep quiet goopt-example.html
+
+./goopt-example --help | grep 'demonstration program'
+./goopt-example --help | grep 'output verbosely'
+
+./goopt-example -n 0 | grep Greet && exit 1
+./goopt-example | grep Greet
+./goopt-example --child Paul --child David --child Laura | grep Paul
+./goopt-example --child Paul --child David --child Laura | grep David
+./goopt-example --child Paul --child David --child Laura | grep Laura
+
+cd ..
+
+cd test-program
+go build
+cd ..
+
+test-program/test-program | grep BOO
+test-program/test-program | grep 'name is anonymous'
+test-program/test-program | grep 'I am unhappy'
+
+test-program/test-program --undefined && exit 1
+test-program/test-program -undef && exit 1
+
+# We should fail given a nonexistent short argument
+test-program/test-program -x && exit 1
+
+test-program/test-program --sad | grep unhappy
+test-program/test-program --happy | grep 'am happy'
+# A unique prefix of a flag should work fine
+test-program/test-program --ha | grep 'am happy'
+# A non-unique prefix should exit with an error
+test-program/test-program --h && exit 1
+
+test-program/test-program -u | grep 'am unhappy'
+test-program/test-program -b boo | grep boo
+# -o requires an argument
+test-program/test-program -o && exit 1
+test-program/test-program -o "let us say lettuce" | grep "let us say lettuce"
+test-program/test-program | grep 'very slow'
+test-program/test-program --speed fast | grep 'very fast'
+test-program/test-program --speed=fast
+test-program/test-program --speed=fast | grep 'very fast'
+test-program/test-program --velocity=medium | grep 'very medium'
+test-program/test-program --velocity=mediu && exit 1
+
+test-program/test-program --help | grep name=anonymous
+test-program/test-program --help | grep ' -b BOO'
+test-program/test-program --help | grep ' --unhappy, --sad'
+test-program/test-program --help | grep '=.slow.medium.fast'
+
+# Check that Strings works as expected:
+test-program/test-program --word=hello | grep 'saying: hello'
+test-program/test-program --word=hello --saying=world | grep 'saying: hello world'
+test-program/test-program -ws hello world | grep 'saying: hello world'
+
+# Check that Args works as expected
+test-program/test-program pluto was a planet | grep "day, pluto was a planet$"
+
+# Verify that unrecognized flag-like objects trigger failure
+test-program/test-program pluto was a --planet && exit 1
+# Check that Args works as expected with --
+test-program/test-program -- pluto was a --planet | grep "day, pluto was a --planet$"
+
+# Check that int works as expected
+test-program/test-program -l 6 | egrep 'man\?{6}$'
+
+echo all tests passed!
