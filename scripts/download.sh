@@ -24,8 +24,8 @@ function main {
         Linux\ armv5*)      download linux_arm5     ;;
         Linux\ armv6*)      download linux_arm6     ;;
         Linux\ armv7*)      download linux_arm7     ;;
-        Linux\ armv8*)      download linux_arm8     ;;
-        Linux\ aarch64*)    download linux_arm8     ;;
+        Linux\ armv8*)      download linux_arm64    ;;
+        Linux\ aarch64*)    download linux_arm64    ;;
         Linux\ *64)         download linux_amd64    ;;
         Linux\ *86)         download linux_386      ;;
         *)
