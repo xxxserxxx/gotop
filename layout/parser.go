@@ -56,7 +56,7 @@ The syntax for the layout specification is:
     in later (spanned) rows.
 13. Widgets are filled in top down, left-to-right order.
 14. The larges row span in a row defines the top-level row span; all smaller
-    row spans constitude sub-rows in the row. For example, `cpu mem/3 net/5`
+    row spans constitute sub-rows in the row. For example, `cpu mem/3 net/5`
     means that net/5 will be 5 rows tall overall, and mem will compose 3 of
     them. If following rows do not have enough widgets to fill the gaps,
     spacers will be used.
