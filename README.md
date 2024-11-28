@@ -39,7 +39,8 @@ If you install gotop by hand, or you download or create new layouts or colorsche
 -  **Arch**: ![](https://img.shields.io/aur/last-modified/gotop) Install from AUR, e.g. `yay -S gotop-bin`. There is also `gotop` and `gotop-git`
 -  **Gentoo**: gotop is available on [guru](https://gitweb.gentoo.org/repo/proj/guru.git) overlay. 
     ```shell
-    sudo layman -a guru
+    sudo eselect repository enable guru
+    sudo emaint sync -r guru
     sudo emerge gotop
     ```
 - **Nix**: you can run `gotop` with `nix-shell -p gotop --run gotop` or add the package `gotop` to your environment
