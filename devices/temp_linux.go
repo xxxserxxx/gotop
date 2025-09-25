@@ -39,10 +39,9 @@ func devs() []string {
 func defs() []string {
 	// MUST be called AFTER init()
 	rv := make([]string, 0)
-	for k, v := range sensorMap {
-		if k != v { // then it's an _input sensor
-			rv = append(rv, v)
-		}
+	for _, v := range sensorMap {
+		// Include all sensors - modern hwmon sensors don't always have _input suffix
+		rv = append(rv, v)
 	}
 	return rv
 }

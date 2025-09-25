@@ -61,8 +61,11 @@ func getTemps(temps map[string]int) map[string]error {
 	}
 	for _, sensor := range sensors {
 		label := sensorMap[sensor.SensorKey]
-		if _, ok := temps[label]; ok {
-			temps[label] = int(sensor.Temperature)
+		if label != "" {
+			// Update temperature if the sensor is in our map
+			if _, ok := temps[label]; ok {
+				temps[label] = int(sensor.Temperature)
+			}
 		}
 	}
 
