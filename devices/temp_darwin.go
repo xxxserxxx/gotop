@@ -9,9 +9,29 @@ import (
 	"encoding/csv"
 	"io"
 	"log"
-
-	"github.com/shirou/gopsutil/v3/host"
+  "strings"
+	"github.com/shirou/gopsutil/v4/sensors"
 )
+
+func update(temps map[string]int) map[string]error {
+
+    sensors, err := sensors.SensorsTemperatures()
+
+    if err != nil {
+        return map[string]error{"gopsutil": err}
+    }
+    for _, sensor := range sensors {
+        if _, ok := temps[sensor.SensorKey]; ok {
+            temps[sensor.SensorKey] = int(sensor.Temperature)
+        }
+    }
+    return nil
+}
+
+ func init() {
+     RegisterTemp(update)
+     RegisterDeviceList(Temperatures, devs, devs)
+ }
 
 // All possible thermometers
 func devs() []string {
@@ -21,7 +41,7 @@ func devs() []string {
 	}
 	// Otherwise, get the sensor data from the system & filter it
 	ids := loadIDs()
-	sensors, err := host.SensorsTemperatures()
+	sensors, err := sensors.SensorsTemperatures()
 	if err != nil {
 		log.Printf("error getting sensor list for temps: %s", err)
 		return []string{}
@@ -33,9 +53,18 @@ func devs() []string {
 		if sensor.Temperature == 0 {
 			continue
 		}
-		if label, ok := ids[sensor.SensorKey]; ok {
-			sensorMap[sensor.SensorKey] = label
-			rv = append(rv, label)
+
+    sensor_labels := strings.Split(sensor.SensorKey, " ")
+
+    if len(sensor_labels) != 2 {
+      continue
+    }
+
+    sensor_label := sensor_labels[1]
+
+    if _, ok := ids[sensor_label]; ok {
+			sensorMap[sensor_label] = sensor.SensorKey
+			rv = append(rv, sensor.SensorKey)
 		}
 	}
 	return rv
