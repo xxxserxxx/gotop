@@ -97,8 +97,10 @@ func (self *Table) Draw(buf *Buffer) {
 		style := NewStyle(Theme.Default.Fg)
 		if self.ShowCursor {
 			if (self.SelectedItem == "" && rowNum == self.SelectedRow) || (self.SelectedItem != "" && self.SelectedItem == row[self.UniqueCol]) {
-				style.Fg = self.CursorColor
-				style.Modifier = ModifierReverse
+				// Paint the cursor colour as the background. Reverse swapped Fg with a
+				// Bg left at ColorClear, which hid the selected row on dark themes.
+				style.Fg = Theme.Default.Fg
+				style.Bg = self.CursorColor
 				for _, width := range self.ColWidths {
 					if width == 0 {
 						continue
